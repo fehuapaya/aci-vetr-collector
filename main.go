@@ -15,7 +15,7 @@ import (
 )
 
 const version = "0.1.0"
-const resultZip = "healthCheckData.zip"
+const resultZip = "health-check-data.zip"
 
 // Config : command line parameters
 type Config struct {
