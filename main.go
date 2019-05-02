@@ -14,6 +14,7 @@ import (
 	"github.com/mholt/archiver"
 )
 
+const schemaVersion = "1"
 const version = "0.1.3"
 const resultZip = "health-check-data.zip"
 
@@ -192,6 +193,7 @@ func main() {
 	fmt.Println("[ok]")
 	metadata, _ := json.Marshal(map[string]interface{}{
 		"collectorVersion": version,
+		"schemaVersion":    schemaVersion,
 		"timestamp":        time.Now(),
 	})
 	files = append(files, writeFile("meta", metadata))
