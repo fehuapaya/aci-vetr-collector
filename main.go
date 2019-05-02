@@ -14,7 +14,7 @@ import (
 	"github.com/mholt/archiver"
 )
 
-const schemaVersion = "1"
+const schemaVersion = 1
 const version = "0.1.3"
 const resultZip = "health-check-data.zip"
 
