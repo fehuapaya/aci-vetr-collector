@@ -14,7 +14,7 @@ import (
 	"github.com/mholt/archiver"
 )
 
-const version = "0.1.0"
+const version = "0.1.3"
 const resultZip = "health-check-data.zip"
 
 // Config : command line parameters
@@ -42,60 +42,62 @@ func newConfigFromCLI() (cfg Config) {
 
 type request struct {
 	name  string
-	uri   string
+	class string
 	query []string
 }
 
 var reqs = []request{
 	// Tenant objects
-	request{name: "epgs", uri: "/api/class/fvEpP"},
-	request{name: "bds", uri: "/api/class/fvBD"},
-	request{name: "vrfs", uri: "/api/class/fvCtx"},
-	request{name: "L3outs", uri: "/api/class/l3extOut"},
-	request{name: "nodeProfiles", uri: "/api/class/l3extLNodeP"},
-	request{name: "intProfiles", uri: "/api/class/l3extLIfP"},
-	request{name: "extEpgs", uri: "/api/class/l3extInstP"},
-	request{name: "tenants", uri: "/api/class/fvBD"},
+	request{name: "epgs", class: "fvEpP"},
+	request{name: "bds", class: "fvBD"},
+	request{name: "vrfs", class: "fvCtx"},
+	request{name: "l3outs", class: "l3extOut"},
+	request{name: "l3-node-profiles", class: "l3extLNodeP"},
+	request{name: "l3-int-profiles", class: "l3extLIfP"},
+	request{name: "ext-epgs", class: "l3extInstP"},
+	request{name: "tenants", class: "fvBD"},
 	// TODO contracts....
 	// fzBrCp (contract)
 	// fzSubj (subject)
 	// fzSubjFiltAtt (filter)
 
 	// Infrastructure
-	request{name: "devices", uri: "/api/class/topSystem"},
-	request{name: "pods", uri: "/api/class/fabricSetupP"},
+	request{name: "devices", class: "topSystem"},
+	request{name: "switch-hardware", class: "fabricNode"},
+	request{name: "apic-hardware", class: "eqptBoard"},
+	request{name: "pods", class: "fabricSetupP"},
 
 	// State
-	request{name: "faults", uri: "/api/class/faultInfo"},
-	request{name: "capacityRules", uri: "/api/class/fvcapRule"},
+	request{name: "faults", class: "faultInfo"},
+	request{name: "capacity-rules", class: "fvcapRule"},
 	request{
 		name:  "epCount",
-		uri:   "/api/class/fvEpP",
+		class: "fvEpP",
 		query: []string{"rsp-subtree-include=count"},
 	},
 	request{
 		name:  "ipCount",
-		uri:   "/api/class/fvIp",
+		class: "fvIp",
 		query: []string{"rsp-subtree-include=count"},
 	},
 	request{
-		name:  "l4l7ContainerCount",
-		uri:   "/api/class/vnsCDev",
+		name:  "l4l7-container-count",
+		class: "vnsCDev",
 		query: []string{"rsp-subtree-include=count"},
 	},
 	request{
-		name:  "l4l7ServiceGraphCount",
-		uri:   "/api/class/vnsGraphInst",
+		name:  "l4l7-service-graph-count",
+		class: "vnsGraphInst",
 		query: []string{"rsp-subtree-include=count"},
 	},
 	request{
-		name:  "moCountByNode",
-		uri:   "/api/class/ctxClassCnt",
+		name:  "mo-count-by-node",
+		class: "ctxClassCnt",
 		query: []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
 	},
 	request{
-		name: "statsByNode",
-		uri:  "/api/class/eqptcapacityEntity",
+		name:  "stats-by-node",
+		class: "eqptcapacityEntity",
 		query: []string{
 			"query-target=self",
 			"rsp-subtree-include=stats",
@@ -117,13 +119,13 @@ var reqs = []request{
 	},
 
 	// Global config
-	request{name: "cryptoKey", uri: "/api/class/pkiExportEncryptionKey"},
-	request{name: "fabricWideSettings", uri: "/api/class/infraSetPol"},
-	request{name: "epLoopControl", uri: "/api/class/epLoopProtectP"},
-	request{name: "rogueEpControl", uri: "/api/class/epControlP"},
-	request{name: "ipAging", uri: "/api/class/epIpAgingP"},
-	request{name: "portTracking", uri: "/api/class/infraPortTrackPol"},
-	request{name: "bgpRRs", uri: "/api/class/bgpRRNodePEp"},
+	request{name: "crypto-key", class: "pkiExportEncryptionKey"},
+	request{name: "fabric-wide-settings", class: "infraSetPol"},
+	request{name: "ep-loop-control", class: "epLoopProtectP"},
+	request{name: "rogue-ep-control", class: "epControlP"},
+	request{name: "ip-aging", class: "epIpAgingP"},
+	request{name: "port-tracking", class: "infraPortTrackPol"},
+	request{name: "bgp-route-reflectors", class: "bgpRRNodePEp"},
 }
 
 func writeFile(name string, body []byte) string {
@@ -135,6 +137,7 @@ func writeFile(name string, body []byte) string {
 }
 
 func fetch(client aci.Client, req aci.Req) aci.Res {
+	// TODO provide an async client.Get interface
 	res, err := client.Get(req)
 	if err != nil {
 		fmt.Println("Please report the following error.")
@@ -175,7 +178,11 @@ func main() {
 	fmt.Printf("Querying fabric...")
 	for _, req := range reqs {
 		fmt.Printf(".")
-		res := fetch(client, aci.Req{URI: req.uri, Query: req.query})
+		// TODO support class queries directly in the go-aci lib
+		res := fetch(client, aci.Req{
+			URI:   fmt.Sprintf("/api/class/%s", req.class),
+			Query: req.query,
+		})
 		data := res.Raw
 		if cfg.Pretty {
 			data = res.Get("@pretty").Raw
@@ -184,7 +191,8 @@ func main() {
 	}
 	fmt.Println("[ok]")
 	metadata, _ := json.Marshal(map[string]interface{}{
-		"timestamp": time.Now(),
+		"collectorVersion": version,
+		"timestamp":        time.Now(),
 	})
 	files = append(files, writeFile("meta", metadata))
 	fmt.Printf("Creating archive...")
