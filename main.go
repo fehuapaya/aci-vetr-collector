@@ -72,7 +72,7 @@ var reqs = []request{
 	request{name: "faults", class: "faultInfo"},
 	request{name: "capacity-rules", class: "fvcapRule"},
 	request{
-		name:  "epCount",
+		name:  "ep-count",
 		class: "fvEpP",
 		query: []string{"rsp-subtree-include=count"},
 	},
