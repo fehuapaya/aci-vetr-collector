@@ -14,8 +14,8 @@ import (
 	"github.com/mholt/archiver"
 )
 
-const schemaVersion = 1
-const version = "0.1.3"
+const schemaVersion = 3
+const version = "0.1.4"
 const resultZip = "health-check-data.zip"
 
 // Config : command line parameters
@@ -56,7 +56,7 @@ var reqs = []request{
 	request{name: "l3-node-profiles", class: "l3extLNodeP"},
 	request{name: "l3-int-profiles", class: "l3extLIfP"},
 	request{name: "ext-epgs", class: "l3extInstP"},
-	request{name: "tenants", class: "fvBD"},
+	request{name: "tenants", class: "fvTenant"},
 	// TODO contracts....
 	// fzBrCp (contract)
 	// fzSubj (subject)
@@ -77,7 +77,7 @@ var reqs = []request{
 		query: []string{"rsp-subtree-include=count"},
 	},
 	request{
-		name:  "ipCount",
+		name:  "ip-count",
 		class: "fvIp",
 		query: []string{"rsp-subtree-include=count"},
 	},
