@@ -14,8 +14,8 @@ import (
 	"github.com/mholt/archiver"
 )
 
-const schemaVersion = 3
-const version = "0.1.4"
+const schemaVersion = 4
+const version = "0.1.5"
 const resultZip = "health-check-data.zip"
 
 // Config : command line parameters
@@ -57,10 +57,9 @@ var reqs = []request{
 	request{name: "l3-int-profiles", class: "l3extLIfP"},
 	request{name: "ext-epgs", class: "l3extInstP"},
 	request{name: "tenants", class: "fvTenant"},
-	// TODO contracts....
-	// fzBrCp (contract)
-	// fzSubj (subject)
-	// fzSubjFiltAtt (filter)
+	request{name: "contracts", class: "vzBrCP"},
+	request{name: "subjects", class: "vzSubj"},
+	request{name: "filters", class: "vzRsSubjFiltAtt"},
 
 	// Infrastructure
 	request{name: "devices", class: "topSystem"},
