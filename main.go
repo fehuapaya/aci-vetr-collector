@@ -14,8 +14,8 @@ import (
 	"github.com/mholt/archiver"
 )
 
-const schemaVersion = 4
-const version = "0.1.5"
+const schemaVersion = 6
+const version = "0.1.7"
 const resultZip = "health-check-data.zip"
 
 // Config : command line parameters
@@ -49,23 +49,23 @@ type request struct {
 
 var reqs = []request{
 	// Tenant objects
-	request{name: "epgs", class: "fvEpP"},
 	request{name: "bds", class: "fvBD"},
-	request{name: "vrfs", class: "fvCtx"},
-	request{name: "l3outs", class: "l3extOut"},
-	request{name: "l3-node-profiles", class: "l3extLNodeP"},
-	request{name: "l3-int-profiles", class: "l3extLIfP"},
-	request{name: "ext-epgs", class: "l3extInstP"},
-	request{name: "tenants", class: "fvTenant"},
 	request{name: "contracts", class: "vzBrCP"},
-	request{name: "subjects", class: "vzSubj"},
+	request{name: "epgs", class: "fvEpP"},
+	request{name: "ext-epgs", class: "l3extInstP"},
 	request{name: "filters", class: "vzRsSubjFiltAtt"},
+	request{name: "l3-int-profiles", class: "l3extLIfP"},
+	request{name: "l3-node-profiles", class: "l3extLNodeP"},
+	request{name: "l3outs", class: "l3extOut"},
+	request{name: "subjects", class: "vzSubj"},
+	request{name: "tenants", class: "fvTenant"},
+	request{name: "vrfs", class: "fvCtx"},
 
 	// Infrastructure
-	request{name: "devices", class: "topSystem"},
-	request{name: "switch-hardware", class: "fabricNode"},
 	request{name: "apic-hardware", class: "eqptBoard"},
+	request{name: "devices", class: "topSystem"},
 	request{name: "pods", class: "fabricSetupP"},
+	request{name: "switch-hardware", class: "fabricNode"},
 
 	// State
 	request{name: "faults", class: "faultInfo"},
@@ -95,37 +95,29 @@ var reqs = []request{
 		class: "ctxClassCnt",
 		query: []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
 	},
-	request{
-		name:  "stats-by-node",
-		class: "eqptcapacityEntity",
-		query: []string{
-			"query-target=self",
-			"rsp-subtree-include=stats",
-			fmt.Sprintf("rsp-subtree-class=%s", strings.Join([]string{
-				"eqptcapacityL2RemoteUsage5min",
-				"eqptcapacityL2TotalUsage5min",
-				"eqptcapacityL2Usage5min",
-				"eqptcapacityL3RemoteUsage5min",
-				"eqptcapacityL3RemoteUsageCap5min",
-				"eqptcapacityL3TotalUsage5min",
-				"eqptcapacityL3TotalUsageCap5min",
-				"eqptcapacityL3Usage5min",
-				"eqptcapacityL3UsageCap5min",
-				"eqptcapacityMcastUsage5min",
-				"eqptcapacityPolUsage5min",
-				"eqptcapacityVlanUsage5min",
-			}, ",")),
-		},
-	},
+	request{name: "capacity-vlan", class: "eqptcapacityVlanUsage5min"},
+	request{name: "capacity-tcam", class: "eqptcapacityPolUsage5min"},
+	request{name: "capacity-l2-local", class: "eqptcapacityL2Usage5min"},
+	request{name: "capacity-l2-remote", class: "eqptcapacityL2RemoteUsage5min"},
+	request{name: "capacity-l2-total", class: "eqptcapacityL2TotalUsage5min"},
+	request{name: "capacity-l3-local", class: "eqptcapacityL3Usage5min"},
+	request{name: "capacity-l3-remote", class: "eqptcapacityL3RemoteUsage5min"},
+	request{name: "capacity-l3-total", class: "eqptcapacityL3TotalUsage5min"},
+	request{name: "capacity-l3-local-cap", class: "eqptcapacityL3UsageCap5min"},
+	request{name: "capacity-l3-remote-cap", class: "eqptcapacityL3RemoteUsageCap5min"},
+	request{name: "capacity-l3-total-cap", class: "eqptcapacityL3TotalUsageCap5min"},
+	request{name: "capacity-mcast", class: "eqptcapacityMcastUsage5min"},
 
 	// Global config
-	request{name: "crypto-key", class: "pkiExportEncryptionKey"},
-	request{name: "fabric-wide-settings", class: "infraSetPol"},
-	request{name: "ep-loop-control", class: "epLoopProtectP"},
-	request{name: "rogue-ep-control", class: "epControlP"},
-	request{name: "ip-aging", class: "epIpAgingP"},
-	request{name: "port-tracking", class: "infraPortTrackPol"},
 	request{name: "bgp-route-reflectors", class: "bgpRRNodePEp"},
+	request{name: "crypto-key", class: "pkiExportEncryptionKey"},
+	request{name: "ep-loop-control", class: "epLoopProtectP"},
+	request{name: "fabric-wide-settings", class: "infraSetPol"},
+	request{name: "ip-aging", class: "epIpAgingP"},
+	request{name: "mcp-global", class: "mcpInstPol"},
+	request{name: "mcp-interface", class: "mcpIfPol"},
+	request{name: "port-tracking", class: "infraPortTrackPol"},
+	request{name: "rogue-ep-control", class: "epControlP"},
 }
 
 func writeFile(name string, body []byte) string {
@@ -136,24 +128,34 @@ func writeFile(name string, body []byte) string {
 	return fn
 }
 
-func fetch(client aci.Client, req aci.Req) aci.Res {
-	// TODO provide an async client.Get interface
-	res, err := client.Get(req)
+func fetch(client aci.Client, cfg Config, req request, c chan string) {
+	fmt.Printf("fetching %s\n", req.name)
+	res, err := client.Get(aci.Req{
+		URI:   fmt.Sprintf("/api/class/%s", req.class),
+		Query: req.query,
+	})
 	if err != nil {
-		fmt.Println("Please report the following error.")
+		fmt.Println("please report the following error:")
 		fmt.Printf("%+v\n", req)
 		log.Fatal(err)
 	}
-	return res
+	data := res.Raw
+	if cfg.Pretty {
+		data = res.Get("@pretty").Raw
+	}
+	c <- writeFile(req.name, []byte(data))
 }
 
 func zipFiles(files []string) {
+	fmt.Println("creating archive")
+	os.Remove(resultZip) // Remove any old archives and ignore errors
 	if err := archiver.Archive(files, resultZip); err != nil {
 		log.Panic(err)
 	}
 }
 
 func rmTempFiles(files []string) {
+	fmt.Println("removing temp files")
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
 			log.Panic(err)
@@ -162,7 +164,7 @@ func rmTempFiles(files []string) {
 }
 
 func main() {
-	var files []string
+	// Setup
 	cfg := newConfigFromCLI()
 	client := aci.NewClient(aci.Config{
 		IP:             cfg.IP,
@@ -170,38 +172,37 @@ func main() {
 		Password:       cfg.Password,
 		RequestTimeout: 90,
 	})
-	fmt.Printf("Authenticating to the APIC...")
+
+	// Authenticate
+	fmt.Println("\nauthenticating to the APIC")
 	if err := client.Login(); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("[ok]")
-	fmt.Printf("Querying fabric...")
+
+	// Fetch data from API
+	fmt.Println(strings.Repeat("=", 30))
+	var files []string
+	c := make(chan string)
 	for _, req := range reqs {
-		fmt.Printf(".")
-		// TODO support class queries directly in the go-aci lib
-		res := fetch(client, aci.Req{
-			URI:   fmt.Sprintf("/api/class/%s", req.class),
-			Query: req.query,
-		})
-		data := res.Raw
-		if cfg.Pretty {
-			data = res.Get("@pretty").Raw
-		}
-		files = append(files, writeFile(req.name, []byte(data)))
+		go fetch(client, cfg, req, c)
 	}
-	fmt.Println("[ok]")
+	for range reqs {
+		files = append(files, <-c)
+	}
+	fmt.Println(strings.Repeat("=", 30))
+
+	// Append metadata
 	metadata, _ := json.Marshal(map[string]interface{}{
 		"collectorVersion": version,
 		"schemaVersion":    schemaVersion,
 		"timestamp":        time.Now(),
 	})
 	files = append(files, writeFile("meta", metadata))
-	fmt.Printf("Creating archive...")
+
+	// Create archive
 	zipFiles(files)
-	fmt.Println("[ok]")
-	fmt.Printf("Removing temp files...")
 	rmTempFiles(files)
-	fmt.Println("[ok]")
+	fmt.Println(strings.Repeat("=", 30))
 	fmt.Println("Collection complete.")
 	fmt.Printf("Please provide %s to Cisco services for further analysis.\n", resultZip)
 }
