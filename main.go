@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -13,19 +12,17 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/brightpuddle/go-aci"
 	"github.com/mholt/archiver"
-	"github.com/tidwall/sjson"
+	"github.com/tidwall/buntdb"
 )
 
 const (
 	schemaVersion = 6
-	version       = "0.1.7"
+	version       = "#.1.7"
 	resultZip     = "health-check-data.zip"
-	resultFile    = "data.json"
+	dbName        = "data.db"
 )
 
 var wg sync.WaitGroup
-var mutex = &sync.Mutex{}
-var out []byte
 
 // Config : command line parameters
 type Config struct {
@@ -152,25 +149,25 @@ var reqs = []request{
 		name:   "ep-count",
 		class:  "fvEpP",
 		query:  []string{"rsp-subtree-include=count"},
-		filter: "0.moCount.attributes",
+		filter: "#.moCount.attributes",
 	},
 	request{
 		name:   "ip-count",
 		class:  "fvIp",
 		query:  []string{"rsp-subtree-include=count"},
-		filter: "0.moCount.attributes",
+		filter: "#.moCount.attributes",
 	},
 	request{
 		name:   "l4l7-container-count",
 		class:  "vnsCDev",
 		query:  []string{"rsp-subtree-include=count"},
-		filter: "0.moCount.attributes",
+		filter: "#.moCount.attributes",
 	},
 	request{
 		name:   "l4l7-service-graph-count",
 		class:  "vnsGraphInst",
 		query:  []string{"rsp-subtree-include=count"},
-		filter: "0.moCount.attributes",
+		filter: "#.moCount.attributes",
 	},
 	request{
 		name:   "mo-count-by-node",
@@ -248,27 +245,27 @@ var reqs = []request{
 	request{
 		name:   "crypto-key",
 		class:  "pkiExportEncryptionKey",
-		filter: "0.pkiExportEncryptionKey.attributes",
+		filter: "#.pkiExportEncryptionKey.attributes",
 	},
 	request{
 		name:   "ep-loop-control",
 		class:  "epLoopProtectP",
-		filter: "0.epLoopProtectP.attributes",
+		filter: "#.epLoopProtectP.attributes",
 	},
 	request{
 		name:   "fabric-wide-settings",
 		class:  "infraSetPol",
-		filter: "0.infraSetPol.attributes",
+		filter: "#.infraSetPol.attributes",
 	},
 	request{
 		name:   "ip-aging",
 		class:  "epIpAgingP",
-		filter: "0.epIpAgingP.attributes",
+		filter: "#.epIpAgingP.attributes",
 	},
 	request{
 		name:   "mcp-global",
 		class:  "mcpInstPol",
-		filter: "0.mcpInstPol.attributes",
+		filter: "#.mcpInstPol.attributes",
 	},
 	request{
 		name:   "mcp-interface",
@@ -278,16 +275,16 @@ var reqs = []request{
 	request{
 		name:   "port-tracking",
 		class:  "infraPortTrackPol",
-		filter: "0.infraPortTrackPol.attributes",
+		filter: "#.infraPortTrackPol.attributes",
 	},
 	request{
 		name:   "rogue-ep-control",
 		class:  "epControlP",
-		filter: "0.epControlP.attributes",
+		filter: "#.epControlP.attributes",
 	},
 }
 
-func fetch(client aci.Client, req request) {
+func fetch(client aci.Client, req request, db *buntdb.DB) {
 	fmt.Printf("fetching %s\n", req.name)
 	res, err := client.Get(aci.Req{
 		URI:   fmt.Sprintf("/api/class/%s", req.class),
@@ -299,9 +296,14 @@ func fetch(client aci.Client, req request) {
 		log.Fatal(err)
 	}
 
-	mutex.Lock()
-	out, _ = sjson.SetRawBytes(out, req.name, []byte(res.Get(req.filter).Raw))
-	mutex.Unlock()
+	db.Update(func(tx *buntdb.Tx) error {
+		for _, record := range res.Get(req.filter).Array() {
+			key := fmt.Sprintf("%s:%s", req.name, record.Get("dn").Str)
+			tx.Set(key, record.Raw, nil)
+		}
+		return nil
+	})
+
 	wg.Done()
 }
 
@@ -330,14 +332,19 @@ func main() {
 	// Authenticate
 	fmt.Println("\nauthenticating to the APIC")
 	if err := client.Login(); err != nil {
-		log.Fatal(err)
+		log.Fatalln("cannot authenticate to the APIC", err)
+	}
+
+	db, err := buntdb.Open(dbName)
+	if err != nil {
+		log.Fatalln("cannot open output file", err)
 	}
 
 	// Fetch data from API
 	fmt.Println(strings.Repeat("=", 30))
 	for _, req := range reqs {
 		wg.Add(1)
-		go fetch(client, req)
+		go fetch(client, req, db)
 	}
 	wg.Wait()
 
@@ -349,23 +356,23 @@ func main() {
 		"schemaVersion":    schemaVersion,
 		"timestamp":        time.Now(),
 	})
-	out, _ = sjson.SetRawBytes(out, "meta", metadata)
+	db.Update(func(tx *buntdb.Tx) error {
+		tx.Set("meta", string(metadata), nil)
+		return nil
+	})
 
-	// Create output file
-
-	if err := ioutil.WriteFile(resultFile, []byte(out), 0644); err != nil {
-		log.Fatalln("could not create file", resultFile)
-	}
+	db.Shrink()
+	db.Close()
 
 	// Create archive
 	fmt.Println("creating archive")
 	os.Remove(resultZip) // Remove any old archives and ignore errors
-	if err := archiver.Archive([]string{resultFile}, resultZip); err != nil {
+	if err := archiver.Archive([]string{dbName}, resultZip); err != nil {
 		log.Panic(err)
 	}
 
 	// Cleanup
-	os.Remove(resultFile)
+	os.Remove(dbName)
 	fmt.Println(strings.Repeat("=", 30))
 	fmt.Println("Collection complete.")
 	fmt.Printf("Please provide %s to Cisco services for further analysis.\n", resultZip)
