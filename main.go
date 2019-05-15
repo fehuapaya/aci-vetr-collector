@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	schemaVersion = 6
-	version       = "#.1.7"
+	schemaVersion = 7
+	version       = "0.2.0"
 	resultZip     = "health-check-data.zip"
 	dbName        = "data.db"
 )
