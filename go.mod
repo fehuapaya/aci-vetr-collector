@@ -1,4 +1,4 @@
-module github.com/brightpuddle/aci-health-check-collector
+module aci-collector
 
 go 1.12
 
