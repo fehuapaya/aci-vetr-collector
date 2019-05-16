@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/brightpuddle/go-aci"
 	"github.com/mholt/archiver"
+	"github.com/rs/zerolog"
 	"github.com/tidwall/buntdb"
 )
 
@@ -19,10 +19,14 @@ const (
 	schemaVersion = 7
 	version       = "0.2.0"
 	resultZip     = "health-check-data.zip"
+	logFile       = "aci-collector.log"
 	dbName        = "data.db"
 )
 
 var wg sync.WaitGroup
+
+var log zerolog.Logger
+var out zerolog.Logger
 
 // Config : command line parameters
 type Config struct {
@@ -286,6 +290,12 @@ var reqs = []request{
 
 func fetch(client aci.Client, req request, db *buntdb.DB) {
 	fmt.Printf("fetching %s\n", req.name)
+	log.Debug().
+		Dict("request", zerolog.Dict().
+			Str("name", req.name).
+			Str("class", req.class).
+			Interface("query", req.query)).
+		Msg("requesting resource")
 	res, err := client.Get(aci.Req{
 		URI:   fmt.Sprintf("/api/class/%s", req.class),
 		Query: req.query,
@@ -293,7 +303,13 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 	if err != nil {
 		fmt.Println("please report the following error:")
 		fmt.Printf("%+v\n", req)
-		log.Fatal(err)
+		out.Fatal().
+			Err(err).
+			Dict("request", zerolog.Dict().
+				Str("name", req.name).
+				Str("class", req.class).
+				Interface("query", req.query)).
+			Msg("failed to make request")
 	}
 
 	db.Update(func(tx *buntdb.Tx) error {
@@ -307,20 +323,22 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 	wg.Done()
 }
 
-func zipFiles(files []string) {
-}
-
-func rmTempFiles(files []string) {
-	fmt.Println("removing temp files")
-	for _, file := range files {
-		if err := os.Remove(file); err != nil {
-			log.Panic(err)
-		}
+func init() {
+	// Setup logger
+	file, err := os.Create(logFile)
+	if err != nil {
+		panic(fmt.Sprintf("cannot create log file %s", logFile))
 	}
+
+	log = zerolog.New(file).With().Timestamp().Logger()
+	out = zerolog.New(zerolog.MultiLevelWriter(
+		file,
+		zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true},
+	)).With().Timestamp().Logger()
 }
 
 func main() {
-	// Setup
+	// Get config
 	cfg := newConfigFromCLI()
 	client := aci.NewClient(aci.Config{
 		IP:             cfg.IP,
@@ -332,12 +350,16 @@ func main() {
 	// Authenticate
 	fmt.Println("\nauthenticating to the APIC")
 	if err := client.Login(); err != nil {
-		log.Fatalln("cannot authenticate to the APIC", err)
+		out.Fatal().
+			Err(err).
+			Str("ip", cfg.IP).
+			Str("user", cfg.Username).
+			Msg("cannot authenticate to the APIC")
 	}
 
 	db, err := buntdb.Open(dbName)
 	if err != nil {
-		log.Fatalln("cannot open output file", err)
+		out.Fatal().Err(err).Str("file", dbName).Msg("cannot open output file")
 	}
 
 	// Fetch data from API
@@ -367,12 +389,17 @@ func main() {
 	// Create archive
 	fmt.Println("creating archive")
 	os.Remove(resultZip) // Remove any old archives and ignore errors
-	if err := archiver.Archive([]string{dbName}, resultZip); err != nil {
-		log.Panic(err)
+	if err := archiver.Archive([]string{dbName, logFile}, resultZip); err != nil {
+		out.Fatal().
+			Err(err).
+			Str("src", dbName).
+			Str("dst", resultZip).
+			Msg("cannot create archive")
 	}
 
 	// Cleanup
 	os.Remove(dbName)
+	os.Remove(logFile)
 	fmt.Println(strings.Repeat("=", 30))
 	fmt.Println("Collection complete.")
 	fmt.Printf("Please provide %s to Cisco services for further analysis.\n", resultZip)
