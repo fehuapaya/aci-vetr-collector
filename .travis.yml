@@ -2,29 +2,25 @@ language: go
 sudo: false
 matrix:
   include:
-    - go: 1.x
-
+  - go: 1.x
 before_install:
-  - go get github.com/mitchellh/gox
-
+- go get github.com/mitchellh/gox
 install:
-  - # skip
-
+- 
 script:
-  - go get -t -v ./...
-  - diff -u <(echo -n) <(gofmt -d .)
-  - go test -race
-  - gox -os="linux darwin windows" -arch="amd64" -output="aci-collector.{{.OS}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...
-
+- go get -t -v ./...
+- diff -u <(echo -n) <(gofmt -d .)
+- go test -race
+- gox -os="linux darwin windows" -arch="amd64" -output="aci-collector.{{.OS}}" -verbose ./...
 deploy:
   provider: releases
   skip_cleanup: true
   api_key:
-    secure: "cZax7y7qzo4F67xkg6TVA5qkJpv6yN6QRZnDtw3skfB2l3rpdHSaqnHnGsRCVroD6rRynu+w2ZS2wEwyGKS9tw8Z284bTBPeGql64MvztXv9iRadqdPQOw6VfFpjssFO7NZH6FKJdPro4LJOqfnjRLSPRnB80woQPvr6Aeg44RHNhjRUwZYkMrM9GCI9vkb5uUF7eMV9SC2RioE+2/HD4SbGz+q02V9Z5u3ZTKUNDR6XSglXsJydzk7vgjoVue0RjD5Ep7tJ2iK/ndwZ1ksNZ72SNJSr6jc7WraGwVpQhP+59+ZCdqm9EjUG2ZljpeURGJPKmsgnTpc/n2MAHpLBo/bO+8S5tFKc2ykDSadzH+DO2JUCE3CKkUWb6rwJSygw77IfPsLdYwWU+dXfkcknIh8y973Ztm6ZAAseIRstQRL1zk7clSUmavNB5sOOTlQx6PUo9NkTTzrM7nHoWjtkDKZbrrZNLl5XzH5O1/ZJtVlrfkFA5Ct9kNJjjBV5OrRnpXegxOkgYaaue/O47aCRH3DqsgXsBIAEWSrun5M3TyJhEEa7aIIJhWLCBkw6j0D9fpt3QR6MG4D9zBCdi/qLXvtZBuuWJM4hyNDaVTcOXOcCa5FFYwPTthx+lDLryBySpXB13hkigWNZ5MTmcXMDWM7nBINIMvlkgHdbd9zAu+k="
+    secure: AdUA5dI7XBvXVOkxvg8OWIAs/HYwERMMPW+Uaqc5QzkZs/j1aodxRMj5tQE3Pk5CiD3XY5KE120g1jIJo1IYJrqFPU0OxzrcUe9j01qTGYr5ckQPyc6pXt46hRGojfI+X4KucFoStMLaAdrBGDhzU+0HZSKYafsy5aRXdXm15RsJ+GMwa6WL5Lyd5d0bQVwUxtCa1cFHXp+KORZpatF2l4VF7a1OCjLEEEinKKZH3tn/W/Mv+oxmTJlC58u4wfKTeiUb/Pf94JJ8CsQFUA4Z4sj4ByUt3ylXaC31l2GWti/yt0YQAmP6Y4w8kY1j+wcAJG0KZT94PSHbU4Ou3a1uQqiNjLCReZUAsKUFVnkhVupXclxv6EafKZKAacmlXIaw0ss+U6ACs7nnpKvlrAl5Giw7dmjm1fWq3c80h1oFofnyRlixRFKXz7dHM6+YezOf2YHkNU8+LBGDf7WORh53tgRZ3xSEhGgp3rMASE+TbsYhUUcsjUISXX2YN1N43AvyOF9mcnGwKezDygwkz4JaVB+I6w5zrPUKKXPGxlMazUSzTtRyUGRiFYEsifOmJepAlqNuawXwX/QNa26BuHoXiG3aU4mSgPwm449G8kEjwGe5HC8oOtzZ6P7lfR5YcYShnHXkpkMdvCLeRszXedoqhg1jMzAc60pOv1BXgHVQklQ=
   file:
-  - "aci-collector.windows.exe"
-  - "aci-collector.darwin"
-  - "aci-collector.linux"
+    aci-collector.windows.exe
+    aci-collector.darwin
+    aci-collector.linux
   on:
     repo: brightpuddle/aci-health-check-collector
     tags: true
