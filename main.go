@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	schemaVersion = 9
-	version       = "0.2.3"
+	schemaVersion = 10
+	version       = "0.3.0"
 	resultZip     = "health-check-data.zip"
 	logFile       = "aci-collector.log"
 	dbName        = "data.db"
