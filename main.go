@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	schemaVersion = 10
+	schemaVersion = 11
 	version       = "0.3.0"
 	resultZip     = "health-check-data.zip"
 	logFile       = "aci-collector.log"
@@ -228,11 +228,16 @@ var reqs = []request{
 		filter: "#.fvnsEncapBlk.attributes",
 	},
 
-	// Domains
+	// Domain relationships
 	request{
 		name:   "domain-vlan-association",
 		class:  "infraRsVlanNs",
 		filter: "#.infraRsVlanNs.attributes",
+	},
+	request{
+		name:   "aep-domain-association",
+		class:  "infraRsDomP",
+		filter: "#.infraRsDomP.attributes",
 	},
 
 	/************************************************************
