@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	schemaVersion = 7
-	version       = "0.2.2"
+	schemaVersion = 9
+	version       = "0.2.3"
 	resultZip     = "health-check-data.zip"
 	logFile       = "aci-collector.log"
 	dbName        = "data.db"
@@ -58,65 +58,9 @@ type request struct {
 }
 
 var reqs = []request{
-
-	// Tenant objects
-	request{
-		name:   "bds",
-		class:  "fvBD",
-		filter: "#.fvBD.attributes",
-	},
-	request{
-		name:   "contracts",
-		class:  "vzBrCP",
-		filter: "#.vzBrCP.attributes",
-	},
-	request{
-		name:   "epgs",
-		class:  "fvEpP",
-		filter: "#.fvEpP.attributes",
-	},
-	request{
-		name:   "ext-epgs",
-		class:  "l3extInstP",
-		filter: "#.l3extInstP.attributes",
-	},
-	request{
-		name:   "filters",
-		class:  "vzRsSubjFiltAtt",
-		filter: "#.vzRsSubjFiltAtt.attributes",
-	},
-	request{
-		name:   "l3-int-profiles",
-		class:  "l3extLIfP",
-		filter: "#.l3extLIfP.attributes",
-	},
-	request{
-		name:   "l3-node-profiles",
-		class:  "l3extLNodeP",
-		filter: "#.l3extLNodeP.attributes",
-	},
-	request{
-		name:   "l3outs",
-		class:  "l3extOut",
-		filter: "#.l3extOut.attributes",
-	},
-	request{
-		name:   "subjects",
-		class:  "vzSubj",
-		filter: "#.vzSubj.attributes",
-	},
-	request{
-		name:   "tenants",
-		class:  "fvTenant",
-		filter: "#.fvTenant.attributes",
-	},
-	request{
-		name:   "vrfs",
-		class:  "fvCtx",
-		filter: "#.fvCtx.attributes",
-	},
-
-	// Infrastructure
+	/************************************************************
+	Infrastructure
+	************************************************************/
 	request{
 		name:   "hardware-apic",
 		class:  "eqptBoard",
@@ -138,14 +82,181 @@ var reqs = []request{
 		filter: "#.fabricNode.attributes",
 	},
 
-	// State
+	/************************************************************
+	Fabric-wide settings
+	************************************************************/
+	// Endpoint Controls
 	request{
-		name:   "faults",
+		name:   "ep-loop-control",
+		class:  "epLoopProtectP",
+		filter: "#.epLoopProtectP.attributes",
+	},
+	request{
+		name:   "rogue-ep-control",
+		class:  "epControlP",
+		filter: "#.epControlP.attributes",
+	},
+	request{
+		name:   "ip-aging",
+		class:  "epIpAgingP",
+		filter: "#.epIpAgingP.attributes",
+	},
+
+	// Fabric-Wide Settings
+	request{
+		name:   "fabric-wide-settings",
+		class:  "infraSetPol",
+		filter: "#.infraSetPol.attributes",
+	},
+
+	// Port-tracking
+	request{
+		name:   "port-tracking",
+		class:  "infraPortTrackPol",
+		filter: "#.infraPortTrackPol.attributes",
+	},
+
+	/************************************************************
+	Tenants
+	************************************************************/
+	// Primary constructs
+	request{
+		name:   "epg",
+		class:  "fvEpP",
+		filter: "#.fvEpP.attributes",
+	},
+	request{
+		name:   "bd",
+		class:  "fvBD",
+		filter: "#.fvBD.attributes",
+	},
+	request{
+		name:   "vrf",
+		class:  "fvCtx",
+		filter: "#.fvCtx.attributes",
+	},
+	request{
+		name:   "tenant",
+		class:  "fvTenant",
+		filter: "#.fvTenant.attributes",
+	},
+	request{
+		name:   "subnet",
+		class:  "fvSubnet",
+		filter: "#.fvSubnet.attributes",
+	},
+
+	// Contracts
+	request{
+		name:   "contract",
+		class:  "vzBrCP",
+		filter: "#.vzBrCP.attributes",
+	},
+	request{
+		name:   "subject",
+		class:  "vzSubj",
+		filter: "#.vzSubj.attributes",
+	},
+	request{
+		name:   "filter",
+		class:  "vzRsSubjFiltAtt",
+		filter: "#.vzRsSubjFiltAtt.attributes",
+	},
+
+	// L3outs
+	request{
+		name:   "ext-epg",
+		class:  "l3extInstP",
+		filter: "#.l3extInstP.attributes",
+	},
+	request{
+		name:   "l3out",
+		class:  "l3extOut",
+		filter: "#.l3extOut.attributes",
+	},
+	request{
+		name:   "l3-int-profile",
+		class:  "l3extLIfP",
+		filter: "#.l3extLIfP.attributes",
+	},
+	request{
+		name:   "l3-node-profile",
+		class:  "l3extLNodeP",
+		filter: "#.l3extLNodeP.attributes",
+	},
+
+	/************************************************************
+	Fabric Policies
+	************************************************************/
+	request{
+		name:   "isis-policy",
+		class:  "isisDomPol",
+		filter: "#.isisDomPol.attributes",
+	},
+	request{
+		name:   "bgp-route-reflector",
+		class:  "bgpRRNodePEp",
+		filter: "#.bgpRRNodePEp.attributes",
+	},
+	request{
+		name:   "node-control-policy",
+		class:  "fabricNodeControl",
+		filter: "#.fabricNodeControl.attributes",
+	},
+
+	/************************************************************
+	Fabric Access
+	************************************************************/
+	// Interface
+	request{
+		name:   "mcp-interface-policy",
+		class:  "mcpIfPol",
+		filter: "#.mcpIfPol.attributes",
+	},
+
+	// Global
+	request{
+		name:   "mcp-global-policy",
+		class:  "mcpInstPol",
+		filter: "#.mcpInstPol.attributes",
+	},
+
+	// Pools
+	request{
+		name:   "vlan-pool",
+		class:  "fvnsEncapBlk",
+		filter: "#.fvnsEncapBlk.attributes",
+	},
+
+	// Domains
+	request{
+		name:   "domain-vlan-association",
+		class:  "infraRsVlanNs",
+		filter: "#.infraRsVlanNs.attributes",
+	},
+
+	/************************************************************
+	Admin/Operations
+	************************************************************/
+	// TODO Firmware groups
+	// TODO Backup settings
+
+	request{
+		name:   "crypto-key",
+		class:  "pkiExportEncryptionKey",
+		filter: "#.pkiExportEncryptionKey.attributes",
+	},
+
+	/************************************************************
+	Live State
+	************************************************************/
+	request{
+		name:   "fault",
 		class:  "faultInfo",
 		filter: "#.faultInst.attributes",
 	},
 	request{
-		name:   "capacity-rules",
+		name:   "capacity-rule",
 		class:  "fvcapRule",
 		filter: "#.fvcapRule.attributes",
 	},
@@ -238,53 +349,6 @@ var reqs = []request{
 		name:   "capacity-mcast",
 		class:  "eqptcapacityMcastUsage5min",
 		filter: "#.eqptcapacityMcastUsage5min.attributes",
-	},
-
-	// Global config
-	request{
-		name:   "bgp-route-reflectors",
-		class:  "bgpRRNodePEp",
-		filter: "#.bgpRRNodePEp.attributes",
-	},
-	request{
-		name:   "crypto-key",
-		class:  "pkiExportEncryptionKey",
-		filter: "#.pkiExportEncryptionKey.attributes",
-	},
-	request{
-		name:   "ep-loop-control",
-		class:  "epLoopProtectP",
-		filter: "#.epLoopProtectP.attributes",
-	},
-	request{
-		name:   "fabric-wide-settings",
-		class:  "infraSetPol",
-		filter: "#.infraSetPol.attributes",
-	},
-	request{
-		name:   "ip-aging",
-		class:  "epIpAgingP",
-		filter: "#.epIpAgingP.attributes",
-	},
-	request{
-		name:   "mcp-global",
-		class:  "mcpInstPol",
-		filter: "#.mcpInstPol.attributes",
-	},
-	request{
-		name:   "mcp-interface",
-		class:  "mcpIfPol",
-		filter: "#.mcpIfPol.attributes",
-	},
-	request{
-		name:   "port-tracking",
-		class:  "infraPortTrackPol",
-		filter: "#.infraPortTrackPol.attributes",
-	},
-	request{
-		name:   "rogue-ep-control",
-		class:  "epControlP",
-		filter: "#.epControlP.attributes",
 	},
 }
 
