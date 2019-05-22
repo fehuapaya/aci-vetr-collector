@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	schemaVersion = 11
+	schemaVersion = 12
 	version       = "0.3.0"
 	resultZip     = "health-check-data.zip"
 	logFile       = "aci-collector.log"
@@ -221,23 +221,26 @@ var reqs = []request{
 		filter: "#.mcpInstPol.attributes",
 	},
 
-	// Pools
+	// AEP/domain/VLANs
 	request{
-		name:   "vlan-pool",
-		class:  "fvnsEncapBlk",
-		filter: "#.fvnsEncapBlk.attributes",
+		name:   "aep",
+		class:  "infraAttEntityP",
+		filter: "#.infraAttEntityP.attributes",
 	},
-
-	// Domain relationships
+	request{
+		name:   "aep-domain-association",
+		class:  "infraRsDomP",
+		filter: "#.infraRsDomP.attributes",
+	},
 	request{
 		name:   "domain-vlan-association",
 		class:  "infraRsVlanNs",
 		filter: "#.infraRsVlanNs.attributes",
 	},
 	request{
-		name:   "aep-domain-association",
-		class:  "infraRsDomP",
-		filter: "#.infraRsDomP.attributes",
+		name:   "vlan-pool",
+		class:  "fvnsEncapBlk",
+		filter: "#.fvnsEncapBlk.attributes",
 	},
 
 	/************************************************************
