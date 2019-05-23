@@ -461,7 +461,8 @@ func main() {
 	// Create archive
 	fmt.Println("creating archive")
 	os.Remove(resultZip) // Remove any old archives and ignore errors
-	if err := archiver.Archive([]string{dbName, logFile}, resultZip); err != nil {
+	err := archiver.Archive([]string{dbName, logFile}, resultZip)
+	if err != nil {
 		out.Fatal().
 			Err(err).
 			Str("src", dbName).
@@ -474,5 +475,6 @@ func main() {
 	os.Remove(logFile)
 	fmt.Println(strings.Repeat("=", 30))
 	fmt.Println("Collection complete.")
-	fmt.Printf("Please provide %s to Cisco services for further analysis.\n", resultZip)
+	fmt.Printf("Please provide %s to Cisco services for further analysis.\n",
+		resultZip)
 }
