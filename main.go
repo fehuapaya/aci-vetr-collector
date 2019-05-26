@@ -461,8 +461,7 @@ func main() {
 	// Create archive
 	fmt.Println("creating archive")
 	os.Remove(resultZip) // Remove any old archives and ignore errors
-	err := archiver.Archive([]string{dbName, logFile}, resultZip)
-	if err != nil {
+	if err := archiver.Archive([]string{dbName, logFile}, resultZip); err != nil {
 		out.Fatal().
 			Err(err).
 			Str("src", dbName).
