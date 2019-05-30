@@ -1,18 +1,18 @@
-# ACI Health Check Collector
+# ACI Vet collector
 
 This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
 Releases are available here. Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
 
-https://github.com/brightpuddle/aci-health-check-collector/releases
+https://github.com/brightpuddle/aci-vet-collector/releases
 
 ## Purpose
 
-This tool performs data collection for the ACI health check tool. This tool can be run by the Cisco customer or coordinated with services to collect the data over WebEx.
+This tool performs data collection for the *ACI vet* tool. This tool can be run by the Cisco customer or coordinated with services to collect the data over WebEx.
 
-Once the collection is complete, the tool will create a `health-check-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
+Once the collection is complete, the tool will create a `aci-vet-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
 
-The tool also creates an `aci-collector.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be found in a failure scenario; upon successful collection this file is bundled into the `health-check-data.zip` file along with collection data.
+The tool also creates an `aci-vet.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be found in a failure scenario; upon successful collection this file is bundled into the `aci-vet-data.zip` file along with collection data.
 
 ## How it works
 
@@ -24,7 +24,7 @@ The tool collects data from a number of endpoints on the APIC for configuration,
 All command line paramters are optional; the tool will prompt for any missing information.
 
 ```
-Usage: aci-collector [--ip IP] [--username USERNAME] [--password PASSWORD]
+Usage: aci-vet-collector [--ip IP] [--username USERNAME] [--password PASSWORD]
 
 Options:
   --ip IP, -i IP         APIC IP address
