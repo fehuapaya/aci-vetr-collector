@@ -1,10 +1,23 @@
 # ACI Health Check Collector
 
-Collect data from the APIC to be used by Cisco Services in the ACI Health Check.
+This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
 Releases are available here:
 
 https://github.com/brightpuddle/aci-health-check-collector/releases
+
+## Purpose
+
+This tool performs data collection for the ACI health check tool. This tool can be run by the Cisco customer or coordinated with services to collect the data over WebEx.
+
+Once the collection is complete, the tool will create a `health-check-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
+
+The tool also creates an `aci-collector.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be found in a failure scenario; upon successful collection this file is bundled into the `health-check-data.zip` file along with collection data.
+
+## How it works
+
+The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. There's currently no interaction with the switches--all data is collected from the APIC, via the API.
+
 
 ## Usage
 
@@ -20,7 +33,3 @@ Options:
   --help, -h             display this help and exit
   --version              display version and exit
 ```
-
-Once the collection is complete, the tool will create a `health-check-data.zip` file. Please provide this tool to your Cisco Services ACI consulting engineer for further analysis.
-
-The tool also creates an `aci-collector.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be found in a failure scenario; upon successful collection this file is bundled into the `health-check-data.zip` file along with collection data.
