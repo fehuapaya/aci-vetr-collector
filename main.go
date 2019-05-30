@@ -17,9 +17,9 @@ import (
 
 const (
 	schemaVersion = 14
-	version       = "0.3.0"
-	resultZip     = "health-check-data.zip"
-	logFile       = "aci-collector.log"
+	version       = "1.0.0"
+	resultZip     = "aci-vet-data.zip"
+	logFile       = "aci-vet.log"
 	dbName        = "data.db"
 )
 
@@ -37,7 +37,7 @@ type Config struct {
 
 // Description : CLI description string
 func (Config) Description() string {
-	return "ACI health check collector"
+	return "ACI Vet collector"
 }
 
 // Version : CLI version string

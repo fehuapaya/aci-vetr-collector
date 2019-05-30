@@ -1,4 +1,4 @@
-module aci-collector
+module aci-vet-collector
 
 go 1.12
 
