@@ -1,10 +1,10 @@
-# ACI Vet collector
+# ACI Collector
 
 This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
 Releases are available here. Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
 
-https://github.com/brightpuddle/aci-vet-collector/releases
+https://github.com/brightpuddle/aci-collector/releases
 
 ## Purpose
 
@@ -24,7 +24,7 @@ The tool collects data from a number of endpoints on the APIC for configuration,
 All command line paramters are optional; the tool will prompt for any missing information.
 
 ```
-Usage: aci-vet-collector [--ip IP] [--username USERNAME] [--password PASSWORD]
+Usage: aci-collector [--ip IP] [--username USERNAME] [--password PASSWORD]
 
 Options:
   --ip IP, -i IP         APIC IP address
