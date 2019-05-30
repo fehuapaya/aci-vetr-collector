@@ -1,6 +1,7 @@
-health-check-data.zip
+aci-vet-data.zip
 
 # Binaries for programs and plugins
+aci-collector.*
 *.exe
 *.exe~
 *.dll
