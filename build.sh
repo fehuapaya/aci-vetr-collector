@@ -1,0 +1,3 @@
+#!/bin/bash
+
+gox -os="linux darwin windows" -arch="amd64" -output="aci-collector.{{.OS}}" -verbose ./...
