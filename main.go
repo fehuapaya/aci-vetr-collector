@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	schemaVersion = 12
+	schemaVersion = 14
 	version       = "0.3.0"
 	resultZip     = "health-check-data.zip"
 	logFile       = "aci-collector.log"
@@ -122,8 +122,8 @@ var reqs = []request{
 	// Primary constructs
 	request{
 		name:   "epg",
-		class:  "fvEpP",
-		filter: "#.fvEpP.attributes",
+		class:  "fvAEPg",
+		filter: "#.fvAEPg.attributes",
 	},
 	request{
 		name:   "bd",
@@ -161,6 +161,16 @@ var reqs = []request{
 		name:   "filter",
 		class:  "vzRsSubjFiltAtt",
 		filter: "#.vzRsSubjFiltAtt.attributes",
+	},
+	request{
+		name:   "contract-consumed",
+		class:  "fvRsProv",
+		filter: "#.fvRsProv.attributes",
+	},
+	request{
+		name:   "contract-consumed",
+		class:  "fvRsCons",
+		filter: "#.fvRsCons.attributes",
 	},
 
 	// L3outs
