@@ -2,7 +2,7 @@
 
 This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
-Releases are available here:
+Releases are available here. Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
 
 https://github.com/brightpuddle/aci-health-check-collector/releases
 
