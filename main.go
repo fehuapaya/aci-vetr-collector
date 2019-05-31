@@ -37,7 +37,7 @@ type Config struct {
 
 // Description : CLI description string
 func (Config) Description() string {
-	return "ACI Vet collector"
+	return "ACI Collector"
 }
 
 // Version : CLI version string
