@@ -260,7 +260,7 @@ var reqs = []request{
 	request{
 		name:   "firmware-running",
 		class:  "firmwareRunning",
-		filter: "#.firmwareRunnin.attributes",
+		filter: "#.firmwareRunning.attributes",
 	},
 	// TODO Firmware groups
 	// TODO Backup settings
