@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	schemaVersion = 14
+	schemaVersion = 15
 	version       = "1.0.0"
 	resultZip     = "aci-vet-data.zip"
 	logFile       = "aci-vet.log"
