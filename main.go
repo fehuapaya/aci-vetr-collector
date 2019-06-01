@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	schemaVersion = 15
-	version       = "1.0.0"
+	schemaVersion = 16
+	version       = "1.2.0"
 	resultZip     = "aci-vet-data.zip"
 	logFile       = "aci-vet.log"
 	dbName        = "data.db"
@@ -258,9 +258,14 @@ var reqs = []request{
 	Admin/Operations
 	************************************************************/
 	request{
-		name:   "firmware-running",
+		name:   "firmware-switch",
 		class:  "firmwareRunning",
 		filter: "#.firmwareRunning.attributes",
+	},
+	request{
+		name:   "firmware-controller",
+		class:  "firmwareCtrlrRunning",
+		filter: "#.firmwareCtrlrRunning.attributes",
 	},
 	// TODO Firmware groups
 	// TODO Backup settings
