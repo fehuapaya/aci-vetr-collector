@@ -51,10 +51,11 @@ func newConfigFromCLI() (cfg Config) {
 }
 
 type request struct {
-	name   string
-	class  string
-	query  []string
-	filter string
+	name     string
+	class    string
+	query    []string
+	filter   string
+	optional bool
 }
 
 var reqs = []request{
@@ -256,6 +257,11 @@ var reqs = []request{
 	/************************************************************
 	Admin/Operations
 	************************************************************/
+	request{
+		name:   "firmware-running",
+		class:  "firmwareRunning",
+		filter: "#.firmwareRunnin.attributes",
+	},
 	// TODO Firmware groups
 	// TODO Backup settings
 
@@ -324,14 +330,16 @@ var reqs = []request{
 		filter: "#.eqptcapacityL2Usage5min.attributes",
 	},
 	request{
-		name:   "capacity-l2-remote",
-		class:  "eqptcapacityL2RemoteUsage5min",
-		filter: "#.eqptcapacityL2RemoteUsage5min.attributes",
+		name:     "capacity-l2-remote",
+		class:    "eqptcapacityL2RemoteUsage5min",
+		filter:   "#.eqptcapacityL2RemoteUsage5min.attributes",
+		optional: true,
 	},
 	request{
-		name:   "capacity-l2-total",
-		class:  "eqptcapacityL2TotalUsage5min",
-		filter: "#.eqptcapacityL2TotalUsage5min.attributes",
+		name:     "capacity-l2-total",
+		class:    "eqptcapacityL2TotalUsage5min",
+		filter:   "#.eqptcapacityL2TotalUsage5min.attributes",
+		optional: true,
 	},
 	request{
 		name:   "capacity-l3-local",
@@ -339,14 +347,16 @@ var reqs = []request{
 		filter: "#.eqptcapacityL3Usage5min.attributes",
 	},
 	request{
-		name:   "capacity-l3-remote",
-		class:  "eqptcapacityL3RemoteUsage5min",
-		filter: "#.eqptcapacityL3RemoteUsage5min.attributes",
+		name:     "capacity-l3-remote",
+		class:    "eqptcapacityL3RemoteUsage5min",
+		filter:   "#.eqptcapacityL3RemoteUsage5min.attributes",
+		optional: true,
 	},
 	request{
-		name:   "capacity-l3-total",
-		class:  "eqptcapacityL3TotalUsage5min",
-		filter: "#.eqptcapacityL3TotalUsage5min.attributes",
+		name:     "capacity-l3-total",
+		class:    "eqptcapacityL3TotalUsage5min",
+		filter:   "#.eqptcapacityL3TotalUsage5min.attributes",
+		optional: true,
 	},
 	request{
 		name:   "capacity-l3-local-cap",
@@ -354,14 +364,16 @@ var reqs = []request{
 		filter: "#.eqptcapacityL3UsageCap5min.attributes",
 	},
 	request{
-		name:   "capacity-l3-remote-cap",
-		class:  "eqptcapacityL3RemoteUsageCap5min",
-		filter: "#.eqptcapacityL3RemoteUsageCap5min.attributes",
+		name:     "capacity-l3-remote-cap",
+		class:    "eqptcapacityL3RemoteUsageCap5min",
+		filter:   "#.eqptcapacityL3RemoteUsageCap5min.attributes",
+		optional: true,
 	},
 	request{
-		name:   "capacity-l3-total-cap",
-		class:  "eqptcapacityL3TotalUsageCap5min",
-		filter: "#.eqptcapacityL3TotalUsageCap5min.attributes",
+		name:     "capacity-l3-total-cap",
+		class:    "eqptcapacityL3TotalUsageCap5min",
+		filter:   "#.eqptcapacityL3TotalUsageCap5min.attributes",
+		optional: true,
 	},
 	request{
 		name:   "capacity-mcast",
@@ -382,8 +394,8 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 		URI:   fmt.Sprintf("/api/class/%s", req.class),
 		Query: req.query,
 	})
-	if err != nil {
-		fmt.Println("please report the following error:")
+	if err != nil && !req.optional {
+		fmt.Println("Please report the following error:")
 		fmt.Printf("%+v\n", req)
 		out.Fatal().
 			Err(err).
