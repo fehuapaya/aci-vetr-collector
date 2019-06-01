@@ -1,7 +1,7 @@
 aci-vet-data.zip
 
 # Binaries for programs and plugins
-aci-collector.*
+aci-collector*
 *.exe
 *.exe~
 *.dll
