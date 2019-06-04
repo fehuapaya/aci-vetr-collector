@@ -127,6 +127,11 @@ var reqs = []request{
 		filter: "#.fvAEPg.attributes",
 	},
 	request{
+		name:   "epg-bd-association",
+		class:  "fvRsBd",
+		filter: "#.fvRsBd.attributes",
+	},
+	request{
 		name:   "bd",
 		class:  "fvBD",
 		filter: "#.fvBD.attributes",
