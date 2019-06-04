@@ -62,334 +62,156 @@ var reqs = []request{
 	/************************************************************
 	Infrastructure
 	************************************************************/
-	request{
-		name:   "hardware-apic",
-		class:  "eqptBoard",
-		filter: "#.eqptBoard.attributes",
-	},
-	request{
-		name:   "devices",
-		class:  "topSystem",
-		filter: "#.topSystem.attributes",
-	},
-	request{
-		name:   "pods",
-		class:  "fabricSetupP",
-		filter: "#.fabricSetupP.attributes",
-	},
-	request{
-		name:   "hardware-switch",
-		class:  "fabricNode",
-		filter: "#.fabricNode.attributes",
-	},
+	{name: "hardware-apic", class: "eqptBoard"},
+	{name: "devices", class: "topSystem"},
+	{name: "pods", class: "fabricSetupP"},
+	{name: "hardware-switch", class: "fabricNode"},
 
 	/************************************************************
 	Fabric-wide settings
 	************************************************************/
 	// Endpoint Controls
-	request{
-		name:   "ep-loop-control",
-		class:  "epLoopProtectP",
-		filter: "#.epLoopProtectP.attributes",
-	},
-	request{
-		name:   "rogue-ep-control",
-		class:  "epControlP",
-		filter: "#.epControlP.attributes",
-	},
-	request{
-		name:   "ip-aging",
-		class:  "epIpAgingP",
-		filter: "#.epIpAgingP.attributes",
-	},
+	{name: "ep-loop-control", class: "epLoopProtectP"},
+	{name: "rogue-ep-control", class: "epControlP"},
+	{name: "ip-aging", class: "epIpAgingP"},
 
 	// Fabric-Wide Settings
-	request{
-		name:   "fabric-wide-settings",
-		class:  "infraSetPol",
-		filter: "#.infraSetPol.attributes",
-	},
+	{name: "fabric-wide-settings", class: "infraSetPol"},
 
 	// Port-tracking
-	request{
-		name:   "port-tracking",
-		class:  "infraPortTrackPol",
-		filter: "#.infraPortTrackPol.attributes",
-	},
+	{name: "port-tracking", class: "infraPortTrackPol"},
 
 	/************************************************************
 	Tenants
 	************************************************************/
 	// Primary constructs
-	request{
-		name:   "epg",
-		class:  "fvAEPg",
-		filter: "#.fvAEPg.attributes",
-	},
-	request{
-		name:   "epg-bd-association",
-		class:  "fvRsBd",
-		filter: "#.fvRsBd.attributes",
-	},
-	request{
-		name:   "bd",
-		class:  "fvBD",
-		filter: "#.fvBD.attributes",
-	},
-	request{
-		name:   "vrf",
-		class:  "fvCtx",
-		filter: "#.fvCtx.attributes",
-	},
-	request{
-		name:   "tenant",
-		class:  "fvTenant",
-		filter: "#.fvTenant.attributes",
-	},
-	request{
-		name:   "subnet",
-		class:  "fvSubnet",
-		filter: "#.fvSubnet.attributes",
-	},
+	{name: "epg", class: "fvAEPg"},
+	{name: "epg-bd-association", class: "fvRsBd"},
+	{name: "bd", class: "fvBD"},
+	{name: "vrf", class: "fvCtx"},
+	{name: "tenant", class: "fvTenant"},
+	{name: "subnet", class: "fvSubnet"},
 
 	// Contracts
-	request{
-		name:   "contract",
-		class:  "vzBrCP",
-		filter: "#.vzBrCP.attributes",
-	},
-	request{
-		name:   "subject",
-		class:  "vzSubj",
-		filter: "#.vzSubj.attributes",
-	},
-	request{
-		name:   "filter",
-		class:  "vzRsSubjFiltAtt",
-		filter: "#.vzRsSubjFiltAtt.attributes",
-	},
-	request{
-		name:   "contract-consumed",
-		class:  "fvRsProv",
-		filter: "#.fvRsProv.attributes",
-	},
-	request{
-		name:   "contract-consumed",
-		class:  "fvRsCons",
-		filter: "#.fvRsCons.attributes",
-	},
+	{name: "contract", class: "vzBrCP"},
+	{name: "subject", class: "vzSubj"},
+	{name: "filter", class: "vzRsSubjFiltAtt"},
+	{name: "contract-consumed", class: "fvRsProv"},
+	{name: "contract-consumed", class: "fvRsCons"},
 
 	// L3outs
-	request{
-		name:   "ext-epg",
-		class:  "l3extInstP",
-		filter: "#.l3extInstP.attributes",
-	},
-	request{
-		name:   "l3out",
-		class:  "l3extOut",
-		filter: "#.l3extOut.attributes",
-	},
-	request{
-		name:   "l3-int-profile",
-		class:  "l3extLIfP",
-		filter: "#.l3extLIfP.attributes",
-	},
-	request{
-		name:   "l3-node-profile",
-		class:  "l3extLNodeP",
-		filter: "#.l3extLNodeP.attributes",
-	},
+	{name: "ext-epg", class: "l3extInstP"},
+	{name: "l3out", class: "l3extOut"},
+	{name: "l3-int-profile", class: "l3extLIfP"},
+	{name: "l3-node-profile", class: "l3extLNodeP"},
 
 	/************************************************************
 	Fabric Policies
 	************************************************************/
-	request{
-		name:   "isis-policy",
-		class:  "isisDomPol",
-		filter: "#.isisDomPol.attributes",
-	},
-	request{
-		name:   "bgp-route-reflector",
-		class:  "bgpRRNodePEp",
-		filter: "#.bgpRRNodePEp.attributes",
-	},
-	request{
-		name:   "node-control-policy",
-		class:  "fabricNodeControl",
-		filter: "#.fabricNodeControl.attributes",
-	},
+	{name: "isis-policy", class: "isisDomPol"},
+	{name: "bgp-route-reflector", class: "bgpRRNodePEp"},
+	{name: "node-control-policy", class: "fabricNodeControl"},
+	{name: "fabric-leaf-policy-group", class: "fabricLeNodePGrp"},
+	{name: "fabric-leaf-policy-association", class: "fabricRsNodeCtrl"},
+	{name: "fabric-leaf-profile", class: "fabricLeafP"},
+	{name: "fabric-leaf-switch-association", class: "fabricLeafS"},
+	{name: "node-block", class: "fabricNodeBlk"},
 
 	/************************************************************
 	Fabric Access
 	************************************************************/
-	// Interface
-	request{
-		name:   "mcp-interface-policy",
-		class:  "mcpIfPol",
-		filter: "#.mcpIfPol.attributes",
-	},
+	// Interface policy
+	{name: "mcp-interface-policy", class: "mcpIfPol"},
 
-	// Global
-	request{
-		name:   "mcp-global-policy",
-		class:  "mcpInstPol",
-		filter: "#.mcpInstPol.attributes",
-	},
+	// Global policy
+	{name: "mcp-global-policy", class: "mcpInstPol"},
 
 	// AEP/domain/VLANs
-	request{
-		name:   "aep",
-		class:  "infraAttEntityP",
-		filter: "#.infraAttEntityP.attributes",
-	},
-	request{
-		name:   "aep-domain-association",
-		class:  "infraRsDomP",
-		filter: "#.infraRsDomP.attributes",
-	},
-	request{
-		name:   "domain-vlan-association",
-		class:  "infraRsVlanNs",
-		filter: "#.infraRsVlanNs.attributes",
-	},
-	request{
-		name:   "vlan-pool",
-		class:  "fvnsEncapBlk",
-		filter: "#.fvnsEncapBlk.attributes",
-	},
+	{name: "aep", class: "infraAttEntityP"},
+	{name: "aep-domain-association", class: "infraRsDomP"},
+	{name: "domain-vlan-association", class: "infraRsVlanNs"},
+	{name: "vlan-pool", class: "fvnsEncapBlk"},
 
 	/************************************************************
 	Admin/Operations
 	************************************************************/
-	request{
-		name:   "firmware-switch",
-		class:  "firmwareRunning",
-		filter: "#.firmwareRunning.attributes",
-	},
-	request{
-		name:   "firmware-controller",
-		class:  "firmwareCtrlrRunning",
-		filter: "#.firmwareCtrlrRunning.attributes",
-	},
+	{name: "firmware-switch", class: "firmwareRunning"},
+	{name: "firmware-controller", class: "firmwareCtrlrRunning"},
 	// TODO Firmware groups
 	// TODO Backup settings
 
-	request{
-		name:   "crypto-key",
-		class:  "pkiExportEncryptionKey",
-		filter: "#.pkiExportEncryptionKey.attributes",
-	},
+	{name: "crypto-key", class: "pkiExportEncryptionKey"},
 
 	/************************************************************
 	Live State
 	************************************************************/
-	request{
-		name:   "fault",
-		class:  "faultInfo",
-		filter: "#.faultInst.attributes",
-	},
-	request{
-		name:   "capacity-rule",
-		class:  "fvcapRule",
-		filter: "#.fvcapRule.attributes",
-	},
-	request{
+	{name: "fault", class: "faultInst"},
+	{name: "capacity-rule", class: "fvcapRule"},
+	{
 		name:   "ep-count",
 		class:  "fvEpP",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	request{
+	{
 		name:   "ip-count",
 		class:  "fvIp",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	request{
+	{
 		name:   "l4l7-container-count",
 		class:  "vnsCDev",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	request{
+	{
 		name:   "l4l7-service-graph-count",
 		class:  "vnsGraphInst",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	request{
-		name:   "mo-count-by-node",
-		class:  "ctxClassCnt",
-		query:  []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
-		filter: "#.ctxClassCnt.attributes",
+	{
+		name:  "mo-count-by-node",
+		class: "ctxClassCnt",
+		query: []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
 	},
-	request{
-		name:   "capacity-vlan",
-		class:  "eqptcapacityVlanUsage5min",
-		filter: "#.eqptcapacityVlanUsage5min.attributes",
-	},
-	request{
-		name:   "capacity-tcam",
-		class:  "eqptcapacityPolUsage5min",
-		filter: "#.eqptcapacityPolUsage5min.attributes",
-	},
-	request{
-		name:   "capacity-l2-local",
-		class:  "eqptcapacityL2Usage5min",
-		filter: "#.eqptcapacityL2Usage5min.attributes",
-	},
-	request{
+	{name: "capacity-vlan", class: "eqptcapacityVlanUsage5min"},
+	{name: "capacity-tcam", class: "eqptcapacityPolUsage5min"},
+	{name: "capacity-l2-local", class: "eqptcapacityL2Usage5min"},
+	{
 		name:     "capacity-l2-remote",
 		class:    "eqptcapacityL2RemoteUsage5min",
-		filter:   "#.eqptcapacityL2RemoteUsage5min.attributes",
 		optional: true,
 	},
-	request{
+	{
 		name:     "capacity-l2-total",
 		class:    "eqptcapacityL2TotalUsage5min",
-		filter:   "#.eqptcapacityL2TotalUsage5min.attributes",
 		optional: true,
 	},
-	request{
-		name:   "capacity-l3-local",
-		class:  "eqptcapacityL3Usage5min",
-		filter: "#.eqptcapacityL3Usage5min.attributes",
-	},
-	request{
+	{name: "capacity-l3-local", class: "eqptcapacityL3Usage5min"},
+	{
 		name:     "capacity-l3-remote",
 		class:    "eqptcapacityL3RemoteUsage5min",
-		filter:   "#.eqptcapacityL3RemoteUsage5min.attributes",
 		optional: true,
 	},
-	request{
+	{
 		name:     "capacity-l3-total",
 		class:    "eqptcapacityL3TotalUsage5min",
-		filter:   "#.eqptcapacityL3TotalUsage5min.attributes",
 		optional: true,
 	},
-	request{
-		name:   "capacity-l3-local-cap",
-		class:  "eqptcapacityL3UsageCap5min",
-		filter: "#.eqptcapacityL3UsageCap5min.attributes",
-	},
-	request{
+	{name: "capacity-l3-local-cap", class: "eqptcapacityL3UsageCap5min"},
+	{
 		name:     "capacity-l3-remote-cap",
 		class:    "eqptcapacityL3RemoteUsageCap5min",
-		filter:   "#.eqptcapacityL3RemoteUsageCap5min.attributes",
 		optional: true,
 	},
-	request{
+	{
 		name:     "capacity-l3-total-cap",
 		class:    "eqptcapacityL3TotalUsageCap5min",
-		filter:   "#.eqptcapacityL3TotalUsageCap5min.attributes",
 		optional: true,
 	},
-	request{
-		name:   "capacity-mcast",
-		class:  "eqptcapacityMcastUsage5min",
-		filter: "#.eqptcapacityMcastUsage5min.attributes",
-	},
+	{name: "capacity-mcast", class: "eqptcapacityMcastUsage5min"},
 }
 
 func fetch(client aci.Client, req request, db *buntdb.DB) {
@@ -417,6 +239,9 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 	}
 
 	db.Update(func(tx *buntdb.Tx) error {
+		if req.filter == "" {
+			req.filter = fmt.Sprintf("#.%s.attributes", req.class)
+		}
 		for _, record := range res.Get(req.filter).Array() {
 			key := fmt.Sprintf("%s:%s", req.name, record.Get("dn").Str)
 			tx.Set(key, record.Raw, nil)
