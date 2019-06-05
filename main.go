@@ -238,16 +238,20 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 			Msg("failed to make request")
 	}
 
-	db.Update(func(tx *buntdb.Tx) error {
+	if err := db.Update(func(tx *buntdb.Tx) error {
 		if req.filter == "" {
 			req.filter = fmt.Sprintf("#.%s.attributes", req.class)
 		}
 		for _, record := range res.Get(req.filter).Array() {
 			key := fmt.Sprintf("%s:%s", req.name, record.Get("dn").Str)
-			tx.Set(key, record.Raw, nil)
+			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
+				out.Fatal().Err(err).Msg("cannot set key")
+			}
 		}
 		return nil
-	})
+	}); err != nil {
+		out.Fatal().Err(err).Msg("cannot write to db file")
+	}
 
 	wg.Done()
 }
@@ -307,12 +311,18 @@ func main() {
 		"schemaVersion":    schemaVersion,
 		"timestamp":        time.Now(),
 	})
-	db.Update(func(tx *buntdb.Tx) error {
-		tx.Set("meta", string(metadata), nil)
+	if err := db.Update(func(tx *buntdb.Tx) error {
+		if _, _, err := tx.Set("meta", string(metadata), nil); err != nil {
+			out.Fatal().Err(err).Msg("cannot write metadata to db")
+		}
 		return nil
-	})
+	}); err != nil {
+		out.Fatal().Err(err).Msg("cannot update db file")
+	}
 
-	db.Shrink()
+	if err := db.Shrink(); err != nil {
+		out.Fatal().Err(err).Msg("cannot shrink db file")
+	}
 	db.Close()
 
 	// Create archive
