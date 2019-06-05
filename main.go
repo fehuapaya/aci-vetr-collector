@@ -17,7 +17,7 @@ import (
 
 const (
 	schemaVersion = 16
-	version       = "1.2.0"
+	version       = "0.8.0"
 	resultZip     = "aci-vet-data.zip"
 	logFile       = "aci-vet.log"
 	dbName        = "data.db"
