@@ -1,4 +1,4 @@
-module collector
+module aci-collector
 
 go 1.12
 
