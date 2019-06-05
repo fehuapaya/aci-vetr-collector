@@ -42,7 +42,7 @@ func (Config) Description() string {
 
 // Version : CLI version string
 func (Config) Version() string {
-	return fmt.Sprintf("version %s", version)
+	return fmt.Sprintf("version %s\nschema version %d", version, schemaVersion)
 }
 
 func newConfigFromCLI() (cfg Config) {
