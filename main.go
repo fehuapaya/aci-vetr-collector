@@ -8,8 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"aci-collector/aci"
+
 	"github.com/alexflint/go-arg"
-	"github.com/brightpuddle/go-aci"
 	"github.com/mholt/archiver"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/buntdb"
