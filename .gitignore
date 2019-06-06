@@ -15,3 +15,6 @@ aci-collector*
 *.out
 
 .DS_Store
+
+# build folder
+dist
