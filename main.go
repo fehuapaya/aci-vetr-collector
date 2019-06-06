@@ -277,7 +277,7 @@ func main() {
 		IP:             cfg.IP,
 		Username:       cfg.Username,
 		Password:       cfg.Password,
-		RequestTimeout: 90,
+		RequestTimeout: 600,
 	})
 
 	// Authenticate
