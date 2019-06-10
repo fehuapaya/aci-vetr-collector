@@ -20,7 +20,7 @@ import (
 var version string
 
 const (
-	schemaVersion = 16
+	schemaVersion = 17
 	resultZip     = "aci-vet-data.zip"
 	logFile       = "aci-vet.log"
 	dbName        = "data.db"
