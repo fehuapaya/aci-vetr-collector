@@ -20,7 +20,7 @@ import (
 var version string
 
 const (
-	schemaVersion = 17
+	schemaVersion = 18
 	resultZip     = "aci-vet-data.zip"
 	logFile       = "aci-vet.log"
 	dbName        = "data.db"
@@ -54,7 +54,6 @@ func newConfigFromCLI() (cfg Config) {
 }
 
 type request struct {
-	name     string
 	class    string
 	query    []string
 	filter   string
@@ -65,163 +64,126 @@ var reqs = []request{
 	/************************************************************
 	Infrastructure
 	************************************************************/
-	{name: "hardware-apic", class: "eqptBoard"},
-	{name: "devices", class: "topSystem"},
-	{name: "pods", class: "fabricSetupP"},
-	{name: "hardware-switch", class: "fabricNode"},
+	{class: "topSystem"},    // All devicdes
+	{class: "eqptBoard"},    // APIC hardware
+	{class: "fabricNode"},   // Switch hardware
+	{class: "fabricSetupP"}, // Pods (fabric setup policy)
 
 	/************************************************************
 	Fabric-wide settings
 	************************************************************/
-	// Endpoint Controls
-	{name: "ep-loop-control", class: "epLoopProtectP"},
-	{name: "rogue-ep-control", class: "epControlP"},
-	{name: "ip-aging", class: "epIpAgingP"},
-
-	// Fabric-Wide Settings
-	{name: "fabric-wide-settings", class: "infraSetPol"},
-
-	// Port-tracking
-	{name: "port-tracking", class: "infraPortTrackPol"},
+	{class: "epLoopProtectP"},    // EP loop protection policy
+	{class: "epControlP"},        // Rogue EP control policy
+	{class: "epIpAgingP"},        // IP aging policy
+	{class: "infraSetPol"},       // Fabric-wide settings
+	{class: "infraPortTrackPol"}, // Port tracking policy
 
 	/************************************************************
 	Tenants
 	************************************************************/
 	// Primary constructs
-	{name: "epg", class: "fvAEPg"},
-	{name: "epg-bd-association", class: "fvRsBd"},
-	{name: "bd", class: "fvBD"},
-	{name: "vrf", class: "fvCtx"},
-	{name: "tenant", class: "fvTenant"},
-	{name: "subnet", class: "fvSubnet"},
+	{class: "fvAEPg"},   // EPG
+	{class: "fvRsBd"},   // EPG --> BD
+	{class: "fvBD"},     // BD
+	{class: "fvCtx"},    // VRF
+	{class: "fvTenant"}, // Tenant
+	{class: "fvSubnet"}, // Subnet
 
 	// Contracts
-	{name: "contract", class: "vzBrCP"},
-	{name: "subject", class: "vzSubj"},
-	{name: "filter", class: "vzRsSubjFiltAtt"},
-	{name: "contract-consumed", class: "fvRsProv"},
-	{name: "contract-consumed", class: "fvRsCons"},
+	{class: "vzBrCP"},          // Contract
+	{class: "vzSubj"},          // Subject
+	{class: "vzRsSubjFiltAtt"}, // Subject --> filter
+	{class: "fvRsProv"},        // EPG --> contract provided
+	{class: "fvRsCons"},        // EPG --> contract consumed
 
 	// L3outs
-	{name: "ext-epg", class: "l3extInstP"},
-	{name: "l3out", class: "l3extOut"},
-	{name: "l3-int-profile", class: "l3extLIfP"},
-	{name: "l3-node-profile", class: "l3extLNodeP"},
+	{class: "l3extInstP"},  // External EPG
+	{class: "l3extOut"},    // L3out
+	{class: "l3extLIfP"},   // L3 interface profile
+	{class: "l3extLNodeP"}, // L3 node profile
 
 	/************************************************************
 	Fabric Policies
 	************************************************************/
-	{name: "isis-policy", class: "isisDomPol"},
-	{name: "bgp-route-reflector", class: "bgpRRNodePEp"},
-	{name: "node-control-policy", class: "fabricNodeControl"},
-	{name: "fabric-leaf-policy-group", class: "fabricLeNodePGrp"},
-	{name: "fabric-leaf-policy-association", class: "fabricRsNodeCtrl"},
-	{name: "fabric-leaf-profile", class: "fabricLeafP"},
-	{name: "fabric-leaf-switch-association", class: "fabricLeafS"},
-	{name: "node-block", class: "fabricNodeBlk"},
+	{class: "isisDomPol"},         // ISIS policy
+	{class: "bgpRRNodePEp"},       // BGP route reflector nodes
+	{class: "fabricNodeControl"},  // node control (Dom, netflow,etc)
+	{class: "fabricRsNodeCtrl"},   // node policy group --> node control
+	{class: "fabricRsLeNodePGrp"}, // leaf --> leaf node policy group
+	{class: "fabricNodeBlk"},      // Node block
 
 	/************************************************************
 	Fabric Access
 	************************************************************/
-	// Interface policy
-	{name: "mcp-interface-policy", class: "mcpIfPol"},
-
-	// Global policy
-	{name: "mcp-global-policy", class: "mcpInstPol"},
+	// MCP
+	{class: "mcpIfPol"},   // MCP inteface policy
+	{class: "mcpInstPol"}, // MCP global policy
 
 	// AEP/domain/VLANs
-	{name: "aep", class: "infraAttEntityP"},
-	{name: "aep-domain-association", class: "infraRsDomP"},
-	{name: "domain-vlan-association", class: "infraRsVlanNs"},
-	{name: "vlan-pool", class: "fvnsEncapBlk"},
+	{class: "infraAttEntityP"}, // AEP
+	{class: "infraRsDomP"},     // AEP --> domain
+	{class: "infraRsVlanNs"},   // Domain --> VLAN pool
+	{class: "fvnsEncapBlk"},    // VLAN encap block
 
 	/************************************************************
 	Admin/Operations
 	************************************************************/
-	{name: "firmware-switch", class: "firmwareRunning"},
-	{name: "firmware-controller", class: "firmwareCtrlrRunning"},
+	{class: "firmwareRunning"},      // Switch firmware
+	{class: "firmwareCtrlrRunning"}, // Controller firmware
 	// TODO Firmware groups
 	// TODO Backup settings
 
-	{name: "crypto-key", class: "pkiExportEncryptionKey"},
+	{class: "pkiExportEncryptionKey"}, // Crypto key
 
 	/************************************************************
 	Live State
 	************************************************************/
-	{name: "fault", class: "faultInst"},
-	{name: "capacity-rule", class: "fvcapRule"},
-	{
-		name:   "ep-count",
+	{class: "faultInst"}, // Faults
+	{class: "fvcapRule"}, // Capacity rules
+	{ // Endpoint count
 		class:  "fvEpP",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	{
-		name:   "ip-count",
+	{ // IP count
 		class:  "fvIp",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	{
-		name:   "l4l7-container-count",
+	{ // L4-L7 container count
 		class:  "vnsCDev",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	{
-		name:   "l4l7-service-graph-count",
+	{ // L4-L7 service graph count
 		class:  "vnsGraphInst",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
-	{
-		name:  "mo-count-by-node",
+	{ // MO count by node
 		class: "ctxClassCnt",
 		query: []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
 	},
-	{name: "capacity-vlan", class: "eqptcapacityVlanUsage5min"},
-	{name: "capacity-tcam", class: "eqptcapacityPolUsage5min"},
-	{name: "capacity-l2-local", class: "eqptcapacityL2Usage5min"},
-	{
-		name:     "capacity-l2-remote",
-		class:    "eqptcapacityL2RemoteUsage5min",
-		optional: true,
-	},
-	{
-		name:     "capacity-l2-total",
-		class:    "eqptcapacityL2TotalUsage5min",
-		optional: true,
-	},
-	{name: "capacity-l3-local", class: "eqptcapacityL3Usage5min"},
-	{
-		name:     "capacity-l3-remote",
-		class:    "eqptcapacityL3RemoteUsage5min",
-		optional: true,
-	},
-	{
-		name:     "capacity-l3-total",
-		class:    "eqptcapacityL3TotalUsage5min",
-		optional: true,
-	},
-	{name: "capacity-l3-local-cap", class: "eqptcapacityL3UsageCap5min"},
-	{
-		name:     "capacity-l3-remote-cap",
-		class:    "eqptcapacityL3RemoteUsageCap5min",
-		optional: true,
-	},
-	{
-		name:     "capacity-l3-total-cap",
-		class:    "eqptcapacityL3TotalUsageCap5min",
-		optional: true,
-	},
-	{name: "capacity-mcast", class: "eqptcapacityMcastUsage5min"},
+
+	// Switch capacity
+	{class: "eqptcapacityVlanUsage5min"},                        // VLAN
+	{class: "eqptcapacityPolUsage5min"},                         // TCAM
+	{class: "eqptcapacityL2Usage5min"},                          // L2 local
+	{class: "eqptcapacityL2RemoteUsage5min", optional: true},    // L2 remote
+	{class: "eqptcapacityL2TotalUsage5min", optional: true},     // L2 total
+	{class: "eqptcapacityL3Usage5min"},                          // L3 local
+	{class: "eqptcapacityL3UsageCap5min"},                       // L3 local cap
+	{class: "eqptcapacityL3RemoteUsage5min", optional: true},    // L3 remote
+	{class: "eqptcapacityL3RemoteUsageCap5min", optional: true}, // L3 remote cap
+	{class: "eqptcapacityL3TotalUsage5min", optional: true},     // L3 total
+	{class: "eqptcapacityL3TotalUsageCap5min", optional: true},  // L3 total cap
+	{class: "eqptcapacityMcastUsage5min"},                       // Multicast
 }
 
 func fetch(client aci.Client, req request, db *buntdb.DB) {
-	fmt.Printf("fetching %s\n", req.name)
+	fmt.Printf("fetching %s\n", req.class)
 	log.Debug().
 		Dict("request", zerolog.Dict().
-			Str("name", req.name).
 			Str("class", req.class).
 			Interface("query", req.query)).
 		Msg("requesting resource")
@@ -235,7 +197,6 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 		out.Fatal().
 			Err(err).
 			Dict("request", zerolog.Dict().
-				Str("name", req.name).
 				Str("class", req.class).
 				Interface("query", req.query)).
 			Msg("failed to make request")
@@ -246,7 +207,7 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 			req.filter = fmt.Sprintf("#.%s.attributes", req.class)
 		}
 		for _, record := range res.Get(req.filter).Array() {
-			key := fmt.Sprintf("%s:%s", req.name, record.Get("dn").Str)
+			key := fmt.Sprintf("%s:%s", req.class, record.Get("dn").Str)
 			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
 				out.Fatal().Err(err).Msg("cannot set key")
 			}
