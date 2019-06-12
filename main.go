@@ -141,7 +141,7 @@ var reqs = []request{
 	{class: "faultInst"}, // Faults
 	{class: "fvcapRule"}, // Capacity rules
 	{ // Endpoint count
-		class:  "fvEpP",
+		class:  "fvCEp",
 		query:  []string{"rsp-subtree-include=count"},
 		filter: "#.moCount.attributes",
 	},
