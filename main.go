@@ -20,7 +20,7 @@ import (
 var version string
 
 const (
-	schemaVersion = 19
+	schemaVersion = 20
 	resultZip     = "aci-vet-data.zip"
 	logFile       = "aci-vet.log"
 	dbName        = "data.db"
@@ -97,10 +97,11 @@ var reqs = []request{
 	{class: "fvRsCons"},        // EPG --> contract consumed
 
 	// L3outs
-	{class: "l3extInstP"},  // External EPG
-	{class: "l3extOut"},    // L3out
-	{class: "l3extLIfP"},   // L3 interface profile
-	{class: "l3extLNodeP"}, // L3 node profile
+	{class: "l3extOut"},            // L3out
+	{class: "l3extLNodeP"},         // L3 node profile
+	{class: "l3extRsNodeL3OutAtt"}, // Node profile --> Node
+	{class: "l3extLIfP"},           // L3 interface profile
+	{class: "l3extInstP"},          // External EPG
 
 	/************************************************************
 	Fabric Policies
