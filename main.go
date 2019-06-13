@@ -194,7 +194,7 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 	if err != nil && !req.optional {
 		fmt.Println("Please report the following error:")
 		fmt.Printf("%+v\n", req)
-		out.Fatal().
+		out.Panic().
 			Err(err).
 			Dict("request", zerolog.Dict().
 				Str("class", req.class).
@@ -209,12 +209,12 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 		for _, record := range res.Get(req.filter).Array() {
 			key := fmt.Sprintf("%s:%s", req.class, record.Get("dn").Str)
 			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
-				out.Fatal().Err(err).Msg("cannot set key")
+				out.Panic().Err(err).Msg("cannot set key")
 			}
 		}
 		return nil
 	}); err != nil {
-		out.Fatal().Err(err).Msg("cannot write to db file")
+		out.Panic().Err(err).Msg("cannot write to db file")
 	}
 
 	wg.Done()
@@ -235,6 +235,15 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Collection unsuccessfully.")
+		}
+		fmt.Println("Press enter to exit.")
+		var throwaway string
+		fmt.Scanln(&throwaway)
+	}()
+
 	// Get config
 	cfg := newConfigFromCLI()
 	client := aci.NewClient(aci.Config{
@@ -247,7 +256,7 @@ func main() {
 	// Authenticate
 	fmt.Println("\nauthenticating to the APIC")
 	if err := client.Login(); err != nil {
-		out.Fatal().
+		out.Panic().
 			Err(err).
 			Str("ip", cfg.IP).
 			Str("user", cfg.Username).
@@ -256,7 +265,7 @@ func main() {
 
 	db, err := buntdb.Open(dbName)
 	if err != nil {
-		out.Fatal().Err(err).Str("file", dbName).Msg("cannot open output file")
+		out.Panic().Err(err).Str("file", dbName).Msg("cannot open output file")
 	}
 
 	// Fetch data from API
@@ -277,15 +286,15 @@ func main() {
 	})
 	if err := db.Update(func(tx *buntdb.Tx) error {
 		if _, _, err := tx.Set("meta", string(metadata), nil); err != nil {
-			out.Fatal().Err(err).Msg("cannot write metadata to db")
+			out.Panic().Err(err).Msg("cannot write metadata to db")
 		}
 		return nil
 	}); err != nil {
-		out.Fatal().Err(err).Msg("cannot update db file")
+		out.Panic().Err(err).Msg("cannot update db file")
 	}
 
 	if err := db.Shrink(); err != nil {
-		out.Fatal().Err(err).Msg("cannot shrink db file")
+		out.Panic().Err(err).Msg("cannot shrink db file")
 	}
 	db.Close()
 
@@ -293,7 +302,7 @@ func main() {
 	fmt.Println("creating archive")
 	os.Remove(resultZip) // Remove any old archives and ignore errors
 	if err := archiver.Archive([]string{dbName, logFile}, resultZip); err != nil {
-		out.Fatal().
+		out.Panic().
 			Err(err).
 			Str("src", dbName).
 			Str("dst", resultZip).
