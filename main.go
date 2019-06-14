@@ -21,8 +21,8 @@ var version string
 
 const (
 	schemaVersion = 20
-	resultZip     = "aci-vet-data.zip"
-	logFile       = "aci-vet.log"
+	resultZip     = "aci-collector-data.zip"
+	logFile       = "collector.log"
 	dbName        = "data.db"
 )
 
@@ -36,6 +36,7 @@ type Config struct {
 	IP       string `arg:"-i" help:"APIC IP address"`
 	Username string `arg:"-u"`
 	Password string `arg:"-p"`
+	Output   string `arg:"-o"`
 }
 
 // Description : CLI description string
@@ -48,9 +49,10 @@ func (Config) Version() string {
 	return fmt.Sprintf("version %s\nschema version %d", version, schemaVersion)
 }
 
-func newConfigFromCLI() (cfg Config) {
+func newConfigFromCLI() Config {
+	cfg := Config{Output: resultZip}
 	arg.MustParse(&cfg)
-	return
+	return cfg
 }
 
 type request struct {
