@@ -21,8 +21,8 @@ var version string
 
 const (
 	schemaVersion = 20
-	resultZip     = "aci-collector-data.zip"
-	logFile       = "collector.log"
+	resultZip     = "aci-vetr-data.zip"
+	logFile       = "aci-vetr-c.log"
 	dbName        = "data.db"
 )
 
@@ -41,7 +41,7 @@ type Config struct {
 
 // Description : CLI description string
 func (Config) Description() string {
-	return "ACI Collector"
+	return "ACI vetR collector"
 }
 
 // Version : CLI version string

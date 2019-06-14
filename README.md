@@ -1,30 +1,30 @@
-# ACI Collector
+# ACI vetR collector
 
 This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
-Releases are available here. Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
+Per-platform binary releases are available here. Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
 
-https://github.com/brightpuddle/aci-collector/releases
+https://github.com/brightpuddle/aci-vetr/releases
 
 ## Purpose
 
 This tool performs data collection for the ACI health check. This tool can be run by the Cisco Business Critical Services customer or coordinated with services to collect the data over WebEx.
 
-Once the collection is complete, the tool will create a `aci-collector-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
+Once the collection is complete, the tool will create a `aci-vetr-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
 
-The tool also creates an `collector.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be seen in a failure scenario; upon successful collection this file is bundled into the `aci-collector-data.zip` file along with collection data.
+The tool also creates an `aci-vetr-c.log` file that can be reviewed and/or provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be available in a failure scenario; upon successful collection this file is bundled into the `aci-vetr-data.zip` file along with collection data.
 
 ## How it works
 
-The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. The tool currently has no interaction with the switches--all data is collected from the APIC, via the API.
+The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. The tool currently has no interaction with the switches--all data is collected from the APIC, via the API. All queries are for specific MO clases, which can be viewed within the source code.
 
 
 ## Usage
 
-All command line paramters are optional; the tool will prompt for any missing information.
+All command line paramters are optional; the tool will prompt for any missing information. This is a command line tool, but can be run directly from the Windows/Mac/Linux GUI if desired--the tool will pause once complete, before closing the terminal.
 
 ```
-Usage: aci-collector [--ip IP] [--username USERNAME] [--password PASSWORD]
+Usage: aci-vetr-c [--ip IP] [--username USERNAME] [--password PASSWORD]
 
 Options:
   --ip IP, -i IP         APIC IP address

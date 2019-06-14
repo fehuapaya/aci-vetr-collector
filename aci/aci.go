@@ -17,12 +17,6 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// TODO Change API to function options instead of structs before any wider use
-//
-// https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
-//
-// Will need to update the aci-collector tool to use the new API
-
 // Config is the required APIC info to create a client.
 // If not provided, the library will prompt for input.
 type Config struct {

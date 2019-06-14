@@ -1,4 +1,4 @@
-project_name: aci-collector
+project_name: aci-vetr-c
 env_files:
   github_token: ~/.github.com.token
 env:
