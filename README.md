@@ -8,11 +8,11 @@ https://github.com/brightpuddle/aci-collector/releases
 
 ## Purpose
 
-This tool performs data collection for the *ACI vet* tool. This tool can be run by the Cisco Business Critical Services customer or coordinated with services to collect the data over WebEx.
+This tool performs data collection for the ACI health check. This tool can be run by the Cisco Business Critical Services customer or coordinated with services to collect the data over WebEx.
 
-Once the collection is complete, the tool will create a `aci-vet-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
+Once the collection is complete, the tool will create a `aci-collector-data.zip` file. This file should be provided to the Cisco Services ACI consulting engineer for further analysis.
 
-The tool also creates an `aci-vet.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be seen in a failure scenario; upon successful collection this file is bundled into the `aci-vet-data.zip` file along with collection data.
+The tool also creates an `collector.log` file that can be provided to Cisco to troubleshoot any issues with the collection process. Note, that this file will only be seen in a failure scenario; upon successful collection this file is bundled into the `aci-collector-data.zip` file along with collection data.
 
 ## How it works
 
