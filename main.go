@@ -303,12 +303,12 @@ func main() {
 
 	// Create archive
 	fmt.Println("creating archive")
-	os.Remove(resultZip) // Remove any old archives and ignore errors
-	if err := archiver.Archive([]string{dbName, logFile}, resultZip); err != nil {
+	os.Remove(cfg.Output) // Remove any old archives and ignore errors
+	if err := archiver.Archive([]string{dbName, logFile}, cfg.Output); err != nil {
 		out.Panic().
 			Err(err).
 			Str("src", dbName).
-			Str("dst", resultZip).
+			Str("dst", cfg.Output).
 			Msg("cannot create archive")
 	}
 
@@ -318,5 +318,5 @@ func main() {
 	fmt.Println(strings.Repeat("=", 30))
 	fmt.Println("Collection complete.")
 	fmt.Printf("Please provide %s to Cisco services for further analysis.\n",
-		resultZip)
+		cfg.Output)
 }
