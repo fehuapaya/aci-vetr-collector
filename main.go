@@ -29,30 +29,42 @@ const (
 var wg sync.WaitGroup
 
 var log zerolog.Logger
-var out zerolog.Logger
 
-// Config : command line parameters
-type Config struct {
+// Args : command line parameters
+type Args struct {
 	IP       string `arg:"-i" help:"APIC IP address"`
-	Username string `arg:"-u"`
-	Password string `arg:"-p"`
-	Output   string `arg:"-o"`
+	Username string `arg:"-u" help:"APIC username"`
+	Password string `arg:"-p" help:"APIC password"`
+	Output   string `arg:"-o" help:"Output file"`
+	Debug    bool   `arg:"-d" help:"Debug output"`
 }
 
 // Description : CLI description string
-func (Config) Description() string {
+func (Args) Description() string {
 	return "ACI vetR collector"
 }
 
 // Version : CLI version string
-func (Config) Version() string {
+func (Args) Version() string {
 	return fmt.Sprintf("version %s\nschema version %d", version, schemaVersion)
 }
 
-func newConfigFromCLI() Config {
-	cfg := Config{Output: resultZip}
-	arg.MustParse(&cfg)
-	return cfg
+func newArgsFromCLI() Args {
+	args := Args{Output: resultZip}
+	arg.MustParse(&args)
+	return args
+}
+
+func runningTime(msg string) (string, time.Time) {
+	startTime := time.Now()
+	log.Debug().Time("start_time", startTime).Msgf("begin: %s", msg)
+	return msg, startTime
+}
+
+func elapsed(msg string, startTime time.Time) {
+	log.Debug().
+		TimeDiff("elapsed_time", time.Now(), startTime).
+		Msgf("done: %s", msg)
 }
 
 type request struct {
@@ -184,11 +196,11 @@ var reqs = []request{
 }
 
 func fetch(client aci.Client, req request, db *buntdb.DB) {
+	defer elapsed(runningTime(req.class))
 	fmt.Printf("fetching %s\n", req.class)
 	log.Debug().
-		Dict("request", zerolog.Dict().
-			Str("class", req.class).
-			Interface("query", req.query)).
+		Str("class", req.class).
+		Interface("query", req.query).
 		Msg("requesting resource")
 	res, err := client.Get(aci.Req{
 		URI:   fmt.Sprintf("/api/class/%s", req.class),
@@ -197,11 +209,10 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 	if err != nil && !req.optional {
 		fmt.Println("Please report the following error:")
 		fmt.Printf("%+v\n", req)
-		out.Panic().
+		log.Panic().
 			Err(err).
-			Dict("request", zerolog.Dict().
-				Str("class", req.class).
-				Interface("query", req.query)).
+			Str("class", req.class).
+			Interface("query", req.query).
 			Msg("failed to make request")
 	}
 
@@ -212,35 +223,38 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 		for _, record := range res.Get(req.filter).Array() {
 			key := fmt.Sprintf("%s:%s", req.class, record.Get("dn").Str)
 			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
-				out.Panic().Err(err).Msg("cannot set key")
+				log.Panic().Err(err).Msg("cannot set key")
 			}
 		}
 		return nil
 	}); err != nil {
-		out.Panic().Err(err).Msg("cannot write to db file")
+		log.Panic().Err(err).Msg("cannot write to db file")
 	}
 
 	wg.Done()
 }
 
-func init() {
-	// Setup logger
+func initLogger(args Args) zerolog.Logger {
 	file, err := os.Create(logFile)
 	if err != nil {
 		panic(fmt.Sprintf("cannot create log file %s", logFile))
 	}
 
-	log = zerolog.New(file).With().Timestamp().Logger()
-	out = zerolog.New(zerolog.MultiLevelWriter(
+	if !args.Debug {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+	zerolog.DurationFieldInteger = true
+
+	return zerolog.New(zerolog.MultiLevelWriter(
 		file,
-		zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true},
+		zerolog.ConsoleWriter{Out: os.Stdout},
 	)).With().Timestamp().Logger()
 }
 
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Collection unsuccessfully.")
+			fmt.Println("Collection failed.")
 		}
 		fmt.Println("Press enter to exit.")
 		var throwaway string
@@ -248,27 +262,28 @@ func main() {
 	}()
 
 	// Get config
-	cfg := newConfigFromCLI()
+	args := newArgsFromCLI()
+	log = initLogger(args)
 	client := aci.NewClient(aci.Config{
-		IP:             cfg.IP,
-		Username:       cfg.Username,
-		Password:       cfg.Password,
+		IP:             args.IP,
+		Username:       args.Username,
+		Password:       args.Password,
 		RequestTimeout: 600,
 	})
 
 	// Authenticate
 	fmt.Println("\nauthenticating to the APIC")
 	if err := client.Login(); err != nil {
-		out.Panic().
+		log.Panic().
 			Err(err).
-			Str("ip", cfg.IP).
-			Str("user", cfg.Username).
+			Str("ip", args.IP).
+			Str("user", args.Username).
 			Msg("cannot authenticate to the APIC")
 	}
 
 	db, err := buntdb.Open(dbName)
 	if err != nil {
-		out.Panic().Err(err).Str("file", dbName).Msg("cannot open output file")
+		log.Panic().Err(err).Str("file", dbName).Msg("cannot open output file")
 	}
 
 	// Fetch data from API
@@ -289,26 +304,26 @@ func main() {
 	})
 	if err := db.Update(func(tx *buntdb.Tx) error {
 		if _, _, err := tx.Set("meta", string(metadata), nil); err != nil {
-			out.Panic().Err(err).Msg("cannot write metadata to db")
+			log.Panic().Err(err).Msg("cannot write metadata to db")
 		}
 		return nil
 	}); err != nil {
-		out.Panic().Err(err).Msg("cannot update db file")
+		log.Panic().Err(err).Msg("cannot update db file")
 	}
 
 	if err := db.Shrink(); err != nil {
-		out.Panic().Err(err).Msg("cannot shrink db file")
+		log.Panic().Err(err).Msg("cannot shrink db file")
 	}
 	db.Close()
 
 	// Create archive
 	fmt.Println("creating archive")
-	os.Remove(cfg.Output) // Remove any old archives and ignore errors
-	if err := archiver.Archive([]string{dbName, logFile}, cfg.Output); err != nil {
-		out.Panic().
+	os.Remove(args.Output) // Remove any old archives and ignore errors
+	if err := archiver.Archive([]string{dbName, logFile}, args.Output); err != nil {
+		log.Panic().
 			Err(err).
 			Str("src", dbName).
-			Str("dst", cfg.Output).
+			Str("dst", args.Output).
 			Msg("cannot create archive")
 	}
 
@@ -318,5 +333,5 @@ func main() {
 	fmt.Println(strings.Repeat("=", 30))
 	fmt.Println("Collection complete.")
 	fmt.Printf("Please provide %s to Cisco services for further analysis.\n",
-		cfg.Output)
+		args.Output)
 }
