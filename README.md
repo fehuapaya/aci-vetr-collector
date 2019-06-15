@@ -1,4 +1,9 @@
-# ACI vetR collector
+<p align="center">
+<img src="logo.png" width="417" height="84" border="0" alt="ACI vetR collector">
+<br/>
+ACI health check data collector
+<p>
+<hr/>
 
 This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
