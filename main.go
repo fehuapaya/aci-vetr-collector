@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"aci-collector/aci"
+	"aci-vetr-c/aci"
 
 	"github.com/alexflint/go-arg"
 	"github.com/mholt/archiver"
