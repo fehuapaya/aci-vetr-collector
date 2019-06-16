@@ -29,12 +29,17 @@ The tool collects data from a number of endpoints on the APIC for configuration,
 All command line paramters are optional; the tool will prompt for any missing information. This is a command line tool, but can be run directly from the Windows/Mac/Linux GUI if desired--the tool will pause once complete, before closing the terminal.
 
 ```
-Usage: aci-vetr-c [--ip IP] [--username USERNAME] [--password PASSWORD]
+Usage: aci-vetr-c [--ip IP] [--username USERNAME] [--password PASSWORD] [--output OUTPUT] [--debug]
 
 Options:
   --ip IP, -i IP         APIC IP address
   --username USERNAME, -u USERNAME
+                         APIC username
   --password PASSWORD, -p PASSWORD
+                         APIC password
+  --output OUTPUT, -o OUTPUT
+                         Output file [default: aci-vetr-data.zip]
+  --debug, -d            Debug output
   --help, -h             display this help and exit
   --version              display version and exit
 ```
