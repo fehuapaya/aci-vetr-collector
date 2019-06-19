@@ -21,8 +21,74 @@ The tool also creates an `aci-vetr-c.log` file that can be reviewed and/or provi
 
 # How it works
 
-The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. The tool currently has no interaction with the switches--all data is collected from the APIC, via the API. All queries are for specific MO clases, which can be viewed within the source code.
+The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. The tool currently has no interaction with the switches--all data is collected from the APIC, via the API. All queries are for specific MO clases. The following API endpoints are queried by this tool:
 
+```
+/api/class/eqptcapacityL3RemoteUsageCap5min.json
+/api/class/eqptcapacityL3UsageCap5min.json
+/api/class/infraRsVlanNs.json
+/api/class/topSystem.json
+/api/class/infraSetPol.json
+/api/class/fabricSetupP.json
+/api/class/fvAEPg.json
+/api/class/l3extLIfP.json
+/api/class/bgpRRNodePEp.json
+/api/class/epLoopProtectP.json
+/api/class/firmwareCtrlrRunning.json
+/api/class/eqptcapacityL2RemoteUsage5min.json
+/api/class/eqptcapacityL2TotalUsage5min.json
+/api/class/fvSubnet.json
+/api/class/fvTenant.json
+/api/class/eqptcapacityVlanUsage5min.json
+/api/class/eqptcapacityPolUsage5min.json
+/api/class/fabricNodeControl.json
+/api/class/l3extOut.json
+/api/class/eqptcapacityL2Usage5min.json
+/api/class/fvCEp.json?rsp-subtree-include=count
+/api/class/eqptcapacityL3TotalUsage5min.json
+/api/class/fvRsCons.json
+/api/class/fvIp.json?rsp-subtree-include=count
+/api/class/vzRsSubjFiltAtt.json
+/api/class/fvnsEncapBlk.json
+/api/class/fabricRsLeNodePGrp.json
+/api/class/vzBrCP.json
+/api/class/eqptBoard.json
+/api/class/firmwareRunning.json
+/api/class/eqptcapacityMcastUsage5min.json
+/api/class/fabricNode.json
+/api/class/fvCtx.json
+/api/class/epControlP.json
+/api/class/l3extLNodeP.json
+/api/class/fabricRsNodeCtrl.json
+/api/class/vnsCDev.json?rsp-subtree-include=count
+/api/class/isisDomPol.json
+/api/class/vnsGraphInst.json?rsp-subtree-include=count
+/api/class/eqptcapacityL3Usage5min.json
+/api/class/fvRsProv.json
+/api/class/l3extInstP.json
+/api/class/eqptcapacityL3RemoteUsage5min.json
+/api/class/infraAttEntityP.json
+/api/class/fvBD.json
+/api/class/fvRsBd.json
+/api/class/epIpAgingP.json
+/api/class/infraPortTrackPol.json
+/api/class/l3extRsNodeL3OutAtt.json
+/api/class/vzSubj.json
+/api/class/ctxClassCnt.json?rsp-subtree-class=l2BD,fvEpP,l3Dom
+/api/class/infraRsDomP.json
+/api/class/mcpIfPol.json
+/api/class/mcpInstPol.json
+/api/class/fabricNodeBlk.json
+/api/class/faultInst.json
+/api/class/eqptcapacityL3TotalUsageCap5min.json
+/api/class/fvcapRule.json
+/api/class/pkiExportEncryptionKey.json
+```
+
+# Security
+This tool only collects the output of the afformentioned endpoints. Documentation on these endpoints is available in the [full API documentation](https://developer.cisco.com/site/apic-mim-ref-api/). Credentials are only used at the point of collection and are not stored in any way.
+
+All data provided to Cisco will be maintained under Cisco's data retention policy.
 
 # Usage
 
