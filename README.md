@@ -86,7 +86,7 @@ The tool collects data from a number of endpoints on the APIC for configuration,
 ```
 
 # Security
-This tool only collects the output of the afformentioned endpoints. Documentation on these endpoints is available in the [full API documentation](https://developer.cisco.com/site/apic-mim-ref-api/). Credentials are only used at the point of collection and are not stored in any way.
+This tool only collects the output of the afformentioned managed objects. Documentation on these endpoints is available in the [full API documentation](https://developer.cisco.com/site/apic-mim-ref-api/). Credentials are only used at the point of collection and are not stored in any way.
 
 All data provided to Cisco will be maintained under Cisco's data retention policy.
 
