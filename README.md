@@ -1,5 +1,5 @@
 <p align="center">
-<img src="logo.png" width="417" height="84" border="0" alt="ACI vetR collector">
+<img src="logo.png" width="418" height="84" border="0" alt="ACI vetR collector">
 <br/>
 ACI health check data collector
 <p>
