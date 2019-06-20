@@ -21,7 +21,9 @@ The tool also creates an `aci-vetr-c.log` file that can be reviewed and/or provi
 
 # How it works
 
-The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. The tool currently has no interaction with the switches--all data is collected from the APIC, via the API. All queries are for specific MO clases. The following API endpoints are queried by this tool:
+The tool collects data from a number of endpoints on the APIC for configuration, current faults, scale-related data, etc. The results of these queries are archived in a zip file to be shared with Cisco. The tool currently has no interaction with the switches--all data is collected from the APIC, via the API.
+
+The following API managed objects are queried by this tool:
 
 ```
 /api/class/eqptcapacityL3RemoteUsageCap5min.json
