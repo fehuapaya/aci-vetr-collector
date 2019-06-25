@@ -311,9 +311,6 @@ func main() {
 		log.Panic().Err(err).Msg("cannot update db file")
 	}
 
-	if err := db.Shrink(); err != nil {
-		log.Panic().Err(err).Msg("cannot shrink db file")
-	}
 	db.Close()
 
 	// Create archive
