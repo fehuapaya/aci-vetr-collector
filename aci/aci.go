@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -126,8 +127,10 @@ func (c *Client) Get(req Req) (Res, error) {
 func (c *Client) Login() error {
 	uri := "/api/aaaLogin"
 	url := c.newURL(Req{URI: uri})
-	data := fmt.Sprintf(`{"aaaUser":{"attributes":{"name":"%s","pwd":"%s"}}}`,
-		c.cfg.Username, c.cfg.Password)
+	data, _ := sjson.Set("", "aaaUser.attributes", map[string]string{
+		"name": c.cfg.Username,
+		"pwd":  c.cfg.Password,
+	})
 	res, err := c.httpClient.Post(url, "json", strings.NewReader(data))
 	if err != nil {
 		return err
