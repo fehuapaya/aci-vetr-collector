@@ -7,7 +7,7 @@ ACI health check data collector
 
 This tool collects data from the APIC to be used by Cisco Services in the ACI Health Check.
 
-Binary releases are available [in the releases tab](https://github.com/brightpuddle/aci-vetr/releases). Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
+Binary releases are available [in the releases tab](https://github.com/brightpuddle/aci-vetr-collector/releases). Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
 
 
 
