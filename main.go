@@ -11,6 +11,7 @@ import (
 	"aci-vetr-c/aci"
 
 	"github.com/alexflint/go-arg"
+	"github.com/mattn/go-colorable"
 	"github.com/mholt/archiver"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/buntdb"
@@ -20,7 +21,7 @@ import (
 var version string
 
 const (
-	schemaVersion = 20
+	schemaVersion = 21
 	resultZip     = "aci-vetr-data.zip"
 	logFile       = "aci-vetr-c.log"
 	dbName        = "data.db"
@@ -68,6 +69,7 @@ func elapsed(msg string, startTime time.Time) {
 }
 
 type request struct {
+	name     string
 	class    string
 	query    []string
 	filter   string
@@ -105,6 +107,7 @@ var reqs = []request{
 
 	// Contracts
 	{class: "vzBrCP"},          // Contract
+	{class: "vzFilter"},        // Filter
 	{class: "vzSubj"},          // Subject
 	{class: "vzRsSubjFiltAtt"}, // Subject --> filter
 	{class: "fvRsProv"},        // EPG --> contract provided
@@ -180,6 +183,14 @@ var reqs = []request{
 		query: []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
 	},
 
+	// Fabric health
+	{class: "fabricHealthTotal"}, // Total and per-pod health scores
+	{ // Per-device health stats
+		name:  "healthInst",
+		class: "topSystem",
+		query: []string{"rsp-subtree-include=health,no-scoped"},
+	},
+
 	// Switch capacity
 	{class: "eqptcapacityVlanUsage5min"},                        // VLAN
 	{class: "eqptcapacityPolUsage5min"},                         // TCAM
@@ -198,12 +209,13 @@ var reqs = []request{
 func fetch(client aci.Client, req request, db *buntdb.DB) {
 	defer elapsed(runningTime(req.class))
 	fmt.Printf("fetching %s\n", req.class)
+	uri := fmt.Sprintf("/api/class/%s", req.class)
 	log.Debug().
-		Str("class", req.class).
+		Str("uri", uri).
 		Interface("query", req.query).
 		Msg("requesting resource")
 	res, err := client.Get(aci.Req{
-		URI:   fmt.Sprintf("/api/class/%s", req.class),
+		URI:   uri,
 		Query: req.query,
 	})
 	if err != nil && !req.optional {
@@ -215,13 +227,19 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 			Interface("query", req.query).
 			Msg("failed to make request")
 	}
-
+	if req.name == "" {
+		req.name = req.class
+	}
+	if req.filter == "" {
+		req.filter = fmt.Sprintf("#.%s.attributes", req.name)
+	}
 	if err := db.Update(func(tx *buntdb.Tx) error {
-		if req.filter == "" {
-			req.filter = fmt.Sprintf("#.%s.attributes", req.class)
-		}
 		for _, record := range res.Get(req.filter).Array() {
-			key := fmt.Sprintf("%s:%s", req.class, record.Get("dn").Str)
+			log.Debug().
+				Str("prefix", req.name).
+				Str("dn", record.Get("dn").Str).
+				Msg("set_db")
+			key := fmt.Sprintf("%s:%s", req.name, record.Get("dn").Str)
 			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
 				log.Panic().Err(err).Msg("cannot set key")
 			}
@@ -247,7 +265,7 @@ func initLogger(args Args) zerolog.Logger {
 
 	return zerolog.New(zerolog.MultiLevelWriter(
 		file,
-		zerolog.ConsoleWriter{Out: os.Stdout},
+		zerolog.ConsoleWriter{Out: colorable.NewColorableStdout()},
 	)).With().Timestamp().Logger()
 }
 
