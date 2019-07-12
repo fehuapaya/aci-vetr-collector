@@ -208,7 +208,7 @@ var reqs = []request{
 
 func fetch(client aci.Client, req request, db *buntdb.DB) {
 	defer elapsed(runningTime(req.class))
-	fmt.Printf("fetching %s\n", req.class)
+	log.Info().Str("class", req.class).Msg("fetching resource...")
 	uri := fmt.Sprintf("/api/class/%s", req.class)
 	log.Debug().
 		Str("uri", uri).
@@ -219,13 +219,11 @@ func fetch(client aci.Client, req request, db *buntdb.DB) {
 		Query: req.query,
 	})
 	if err != nil && !req.optional {
-		fmt.Println("Please report the following error:")
-		fmt.Printf("%+v\n", req)
 		log.Panic().
 			Err(err).
 			Str("class", req.class).
 			Interface("query", req.query).
-			Msg("failed to make request")
+			Msg("Failed to make request. Please report this error to Cisco.")
 	}
 	if req.name == "" {
 		req.name = req.class
@@ -272,7 +270,7 @@ func initLogger(args Args) zerolog.Logger {
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Collection failed.")
+			log.Error().Msg("Collection failed.")
 		}
 		fmt.Println("Press enter to exit.")
 		var throwaway string
@@ -290,7 +288,9 @@ func main() {
 	})
 
 	// Authenticate
-	fmt.Println("\nauthenticating to the APIC")
+	log.Info().Str("host", args.IP).Msg("APIC host")
+	log.Info().Str("user", args.Username).Msg("APIC username")
+	log.Info().Msg("Authenticating to the APIC...")
 	if err := client.Login(); err != nil {
 		log.Panic().
 			Err(err).
@@ -332,7 +332,7 @@ func main() {
 	db.Close()
 
 	// Create archive
-	fmt.Println("creating archive")
+	log.Info().Msg("Creating archive")
 	os.Remove(args.Output) // Remove any old archives and ignore errors
 	if err := archiver.Archive([]string{dbName, logFile}, args.Output); err != nil {
 		log.Panic().
@@ -346,7 +346,7 @@ func main() {
 	os.Remove(dbName)
 	os.Remove(logFile)
 	fmt.Println(strings.Repeat("=", 30))
-	fmt.Println("Collection complete.")
-	fmt.Printf("Please provide %s to Cisco services for further analysis.\n",
+	log.Info().Msg("Collection complete.")
+	log.Info().Msgf("Please provide %s to Cisco Services for further analysis.",
 		args.Output)
 }
