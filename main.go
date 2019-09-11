@@ -21,7 +21,7 @@ import (
 var version string
 
 const (
-	schemaVersion = 21
+	schemaVersion = 22
 	resultZip     = "aci-vetr-data.zip"
 	logFile       = "aci-vetr-c.log"
 	dbName        = "data.db"
@@ -93,6 +93,7 @@ var reqs = []request{
 	{class: "epIpAgingP"},        // IP aging policy
 	{class: "infraSetPol"},       // Fabric-wide settings
 	{class: "infraPortTrackPol"}, // Port tracking policy
+	{class: "coopPol"},           // COOP group policy
 
 	/************************************************************
 	Tenants
