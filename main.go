@@ -273,6 +273,8 @@ func main() {
 		if r := recover(); r != nil {
 			log.Error().Msg("Collection failed.")
 		}
+		os.Remove(dbName)
+		os.Remove(logFile)
 		fmt.Println("Press enter to exit.")
 		var throwaway string
 		fmt.Scanln(&throwaway)
@@ -344,8 +346,6 @@ func main() {
 	}
 
 	// Cleanup
-	os.Remove(dbName)
-	os.Remove(logFile)
 	fmt.Println(strings.Repeat("=", 30))
 	log.Info().Msg("Collection complete.")
 	log.Info().Msgf("Please provide %s to Cisco Services for further analysis.",
