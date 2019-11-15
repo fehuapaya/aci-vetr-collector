@@ -21,7 +21,7 @@ import (
 var version string
 
 const (
-	schemaVersion = 22
+	schemaVersion = 23
 	resultZip     = "aci-vetr-data.zip"
 	logFile       = "aci-vetr-c.log"
 	dbName        = "data.db"
@@ -126,6 +126,7 @@ var reqs = []request{
 	************************************************************/
 	{class: "isisDomPol"},         // ISIS policy
 	{class: "bgpRRNodePEp"},       // BGP route reflector nodes
+	{class: "l3IfPol"},            // L3 interface policy
 	{class: "fabricNodeControl"},  // node control (Dom, netflow,etc)
 	{class: "fabricRsNodeCtrl"},   // node policy group --> node control
 	{class: "fabricRsLeNodePGrp"}, // leaf --> leaf node policy group
@@ -135,7 +136,11 @@ var reqs = []request{
 	Fabric Access
 	************************************************************/
 	// MCP
-	{class: "mcpIfPol"},   // MCP inteface policy
+	{class: "mcpIfPol"},          // MCP inteface policy
+	{class: "infraRsMcpIfPol"},   // MCP pol --> policy group
+	{class: "infraRsAccBaseGrp"}, // policy group --> host port selector
+	{class: "infraRsAccPortP"},   // int profile --> node profile
+
 	{class: "mcpInstPol"}, // MCP global policy
 
 	// AEP/domain/VLANs
