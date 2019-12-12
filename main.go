@@ -8,9 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"aci-vetr-c/aci"
-
 	"github.com/alexflint/go-arg"
+	"github.com/brightpuddle/goaci"
 	"github.com/mattn/go-colorable"
 	"github.com/mholt/archiver"
 	"github.com/rs/zerolog"
@@ -40,12 +39,12 @@ type Args struct {
 	Debug    bool   `arg:"-d" help:"Debug output"`
 }
 
-// Description : CLI description string
+// Description is the CLI description string.
 func (Args) Description() string {
 	return "ACI vetR collector"
 }
 
-// Version : CLI version string
+// Version is the CLI version string.
 func (Args) Version() string {
 	return fmt.Sprintf("version %s\nschema version %d", version, schemaVersion)
 }
@@ -68,15 +67,22 @@ func elapsed(msg string, startTime time.Time) {
 		Msgf("done: %s", msg)
 }
 
-type request struct {
-	name     string
-	class    string
-	query    []string
-	filter   string
-	optional bool
+// HTTP queries
+type Query struct {
+	key   string
+	value string
 }
 
-var reqs = []request{
+// Request is a customized wrapper for goaci.Req
+type Request struct {
+	name     string             // Custom class name for DB - use class by default
+	class    string             // MO class to query
+	queries  []func(*goaci.Req) // query paramters
+	filter   string             // GJSON path query for the result
+	optional bool               // Fail on unsuccessful collection?
+}
+
+var reqs = []Request{
 	/************************************************************
 	Infrastructure
 	************************************************************/
@@ -152,11 +158,8 @@ var reqs = []request{
 	/************************************************************
 	Admin/Operations
 	************************************************************/
-	{class: "firmwareRunning"},      // Switch firmware
-	{class: "firmwareCtrlrRunning"}, // Controller firmware
-	// TODO Firmware groups
-	// TODO Backup settings
-
+	{class: "firmwareRunning"},        // Switch firmware
+	{class: "firmwareCtrlrRunning"},   // Controller firmware
 	{class: "pkiExportEncryptionKey"}, // Crypto key
 
 	/************************************************************
@@ -165,36 +168,36 @@ var reqs = []request{
 	{class: "faultInst"}, // Faults
 	{class: "fvcapRule"}, // Capacity rules
 	{ // Endpoint count
-		class:  "fvCEp",
-		query:  []string{"rsp-subtree-include=count"},
-		filter: "#.moCount.attributes",
+		class:   "fvCEp",
+		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
+		filter:  "#.moCount.attributes",
 	},
 	{ // IP count
-		class:  "fvIp",
-		query:  []string{"rsp-subtree-include=count"},
-		filter: "#.moCount.attributes",
+		class:   "fvIp",
+		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
+		filter:  "#.moCount.attributes",
 	},
 	{ // L4-L7 container count
-		class:  "vnsCDev",
-		query:  []string{"rsp-subtree-include=count"},
-		filter: "#.moCount.attributes",
+		class:   "vnsCDev",
+		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
+		filter:  "#.moCount.attributes",
 	},
 	{ // L4-L7 service graph count
-		class:  "vnsGraphInst",
-		query:  []string{"rsp-subtree-include=count"},
-		filter: "#.moCount.attributes",
+		class:   "vnsGraphInst",
+		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
+		filter:  "#.moCount.attributes",
 	},
 	{ // MO count by node
-		class: "ctxClassCnt",
-		query: []string{"rsp-subtree-class=l2BD,fvEpP,l3Dom"},
+		class:   "ctxClassCnt",
+		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-class", "l2BD,fvEpP,l3Dom")},
 	},
 
 	// Fabric health
 	{class: "fabricHealthTotal"}, // Total and per-pod health scores
 	{ // Per-device health stats
-		name:  "healthInst",
-		class: "topSystem",
-		query: []string{"rsp-subtree-include=health,no-scoped"},
+		name:    "healthInst",
+		class:   "topSystem",
+		queries: []func(j *goaci.Req){goaci.Query("rsp-subtree-include", "health,no-scoped")},
 	},
 
 	// Switch capacity
@@ -212,23 +215,20 @@ var reqs = []request{
 	{class: "eqptcapacityMcastUsage5min"},                       // Multicast
 }
 
-func fetch(client aci.Client, req request, db *buntdb.DB) {
+func fetch(client goaci.Client, req Request, db *buntdb.DB) {
 	defer elapsed(runningTime(req.class))
 	log.Info().Str("class", req.class).Msg("fetching resource...")
 	uri := fmt.Sprintf("/api/class/%s", req.class)
 	log.Debug().
 		Str("uri", uri).
-		Interface("query", req.query).
+		Interface("query", req.queries).
 		Msg("requesting resource")
-	res, err := client.Get(aci.Req{
-		URI:   uri,
-		Query: req.query,
-	})
+	res, err := client.GetClass(req.class, req.queries...)
 	if err != nil && !req.optional {
 		log.Panic().
 			Err(err).
 			Str("class", req.class).
-			Interface("query", req.query).
+			Interface("query", req.queries).
 			Msg("Failed to make request. Please report this error to Cisco.")
 	}
 	if req.name == "" {
@@ -288,12 +288,15 @@ func main() {
 	// Get config
 	args := newArgsFromCLI()
 	log = initLogger(args)
-	client := aci.NewClient(aci.Config{
-		IP:             args.IP,
-		Username:       args.Username,
-		Password:       args.Password,
-		RequestTimeout: 600,
-	})
+	client, err := goaci.NewClient(
+		args.IP,
+		args.Username,
+		args.Password,
+		goaci.RequestTimeout(600),
+	)
+	if err != nil {
+		log.Panic().Err(err).Msg("Failed to create ACI client.")
+	}
 
 	// Authenticate
 	log.Info().Str("host", args.IP).Msg("APIC host")
@@ -304,7 +307,7 @@ func main() {
 			Err(err).
 			Str("ip", args.IP).
 			Str("user", args.Username).
-			Msg("cannot authenticate to the APIC")
+			Msg("cannot authenticate to the APIC.")
 	}
 
 	db, err := buntdb.Open(dbName)
