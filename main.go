@@ -30,7 +30,7 @@ var wg sync.WaitGroup
 
 var log zerolog.Logger
 
-// Args : command line parameters
+// Args are command line parameters.
 type Args struct {
 	IP       string `arg:"-i" help:"APIC IP address"`
 	Username string `arg:"-u" help:"APIC username"`
@@ -67,15 +67,9 @@ func elapsed(msg string, startTime time.Time) {
 		Msgf("done: %s", msg)
 }
 
-// HTTP queries
-type Query struct {
-	key   string
-	value string
-}
-
-// Request is a customized wrapper for goaci.Req
+// Request is are the paramters that go into creating a goaci.Req
 type Request struct {
-	name     string             // Custom class name for DB - use class by default
+	prefix   string             // Custom db prefix - use class by default
 	class    string             // MO class to query
 	queries  []func(*goaci.Req) // query paramters
 	filter   string             // GJSON path query for the result
@@ -170,22 +164,18 @@ var reqs = []Request{
 	{ // Endpoint count
 		class:   "fvCEp",
 		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
-		filter:  "#.moCount.attributes",
 	},
 	{ // IP count
 		class:   "fvIp",
 		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
-		filter:  "#.moCount.attributes",
 	},
 	{ // L4-L7 container count
 		class:   "vnsCDev",
 		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
-		filter:  "#.moCount.attributes",
 	},
 	{ // L4-L7 service graph count
 		class:   "vnsGraphInst",
 		queries: []func(*goaci.Req){goaci.Query("rsp-subtree-include", "count")},
-		filter:  "#.moCount.attributes",
 	},
 	{ // MO count by node
 		class:   "ctxClassCnt",
@@ -195,7 +185,7 @@ var reqs = []Request{
 	// Fabric health
 	{class: "fabricHealthTotal"}, // Total and per-pod health scores
 	{ // Per-device health stats
-		name:    "healthInst",
+		prefix:  "healthInst",
 		class:   "topSystem",
 		queries: []func(j *goaci.Req){goaci.Query("rsp-subtree-include", "health,no-scoped")},
 	},
@@ -231,19 +221,20 @@ func fetch(client goaci.Client, req Request, db *buntdb.DB) {
 			Interface("query", req.queries).
 			Msg("Failed to make request. Please report this error to Cisco.")
 	}
-	if req.name == "" {
-		req.name = req.class
-	}
-	if req.filter == "" {
-		req.filter = fmt.Sprintf("#.%s.attributes", req.name)
+	if req.prefix == "" {
+		req.prefix = req.class
 	}
 	if err := db.Update(func(tx *buntdb.Tx) error {
-		for _, record := range res.Get(req.filter).Array() {
+		for _, record := range res.Get("#.*.attributes").Array() {
+			dn := record.Get("dn").Str
+			if dn == "" {
+				log.Panic().Str("record", record.Raw).Msg("DN empty")
+			}
 			log.Debug().
-				Str("prefix", req.name).
-				Str("dn", record.Get("dn").Str).
+				Interface("req", req).
+				Str("dn", dn).
 				Msg("set_db")
-			key := fmt.Sprintf("%s:%s", req.name, record.Get("dn").Str)
+			key := fmt.Sprintf("%s:%s", req.prefix, record.Get("dn").Str)
 			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
 				log.Panic().Err(err).Msg("cannot set key")
 			}
