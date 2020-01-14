@@ -4,6 +4,8 @@ github.com/alexflint/go-scalar v1.0.0 h1:NGupf1XV/Xb04wXskDFzS0KWOLH632W/EO4fAFi
 github.com/alexflint/go-scalar v1.0.0/go.mod h1:GpHzbCOZXEKMEcygYQ5n/aa4Aq84zbxjy3MxYW0gjYw=
 github.com/brightpuddle/goaci v0.3.6 h1:8GumHMF+8NdKQ09QX2aTRkGS1UfW7WGodbZZFh7LAyc=
 github.com/brightpuddle/goaci v0.3.6/go.mod h1:jBlg9GKQw+pxxQPmxvRPnRH9Qf06oDwmTB5xGfvQimc=
+github.com/brightpuddle/goaci v0.4.0 h1:+xRcxjEGHV+JGp5dh4UOWxwgsI23fSisZtMslThnats=
+github.com/brightpuddle/goaci v0.4.0/go.mod h1:jBlg9GKQw+pxxQPmxvRPnRH9Qf06oDwmTB5xGfvQimc=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -49,6 +51,8 @@ github.com/tidwall/buntdb v1.1.0 h1:H6LzK59KiNjf1nHVPFrYj4Qnl8d8YLBsYamdL8N+Bao=
 github.com/tidwall/buntdb v1.1.0/go.mod h1:Y39xhcDW10WlyYXeLgGftXVbjtM0QP+/kpz8xl9cbzE=
 github.com/tidwall/gjson v1.3.4 h1:On5waDnyKKk3SWE4EthbjjirAWXp43xx5cKCUZY1eZw=
 github.com/tidwall/gjson v1.3.4/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
+github.com/tidwall/gjson v1.3.5 h1:2oW9FBNu8qt9jy5URgrzsVx/T/KSn3qn/smJQ0crlDQ=
+github.com/tidwall/gjson v1.3.5/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/grect v0.0.0-20161006141115-ba9a043346eb h1:5NSYaAdrnblKByzd7XByQEJVT8+9v0W/tIY0Oo4OwrE=
 github.com/tidwall/grect v0.0.0-20161006141115-ba9a043346eb/go.mod h1:lKYYLFIr9OIgdgrtgkZ9zgRxRdvPYsExnYBsEAd8W5M=
 github.com/tidwall/match v1.0.1 h1:PnKP62LPNxHKTwvHHZZzdOAOCtsJTjo6dZLCwpKm5xc=
