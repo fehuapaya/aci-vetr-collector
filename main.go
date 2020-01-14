@@ -69,11 +69,9 @@ func elapsed(msg string, startTime time.Time) {
 
 // Request is are the paramters that go into creating a goaci.Req
 type Request struct {
-	prefix   string             // Custom db prefix - use class by default
-	class    string             // MO class to query
-	queries  []func(*goaci.Req) // query paramters
-	filter   string             // GJSON path query for the result
-	optional bool               // Fail on unsuccessful collection?
+	prefix  string             // Custom db prefix - use class by default
+	class   string             // MO class to query
+	queries []func(*goaci.Req) // query paramters
 }
 
 var reqs = []Request{
@@ -191,18 +189,18 @@ var reqs = []Request{
 	},
 
 	// Switch capacity
-	{class: "eqptcapacityVlanUsage5min"},                        // VLAN
-	{class: "eqptcapacityPolUsage5min"},                         // TCAM
-	{class: "eqptcapacityL2Usage5min"},                          // L2 local
-	{class: "eqptcapacityL2RemoteUsage5min", optional: true},    // L2 remote
-	{class: "eqptcapacityL2TotalUsage5min", optional: true},     // L2 total
-	{class: "eqptcapacityL3Usage5min"},                          // L3 local
-	{class: "eqptcapacityL3UsageCap5min"},                       // L3 local cap
-	{class: "eqptcapacityL3RemoteUsage5min", optional: true},    // L3 remote
-	{class: "eqptcapacityL3RemoteUsageCap5min", optional: true}, // L3 remote cap
-	{class: "eqptcapacityL3TotalUsage5min", optional: true},     // L3 total
-	{class: "eqptcapacityL3TotalUsageCap5min", optional: true},  // L3 total cap
-	{class: "eqptcapacityMcastUsage5min"},                       // Multicast
+	{class: "eqptcapacityVlanUsage5min"},        // VLAN
+	{class: "eqptcapacityPolUsage5min"},         // TCAM
+	{class: "eqptcapacityL2Usage5min"},          // L2 local
+	{class: "eqptcapacityL2RemoteUsage5min"},    // L2 remote
+	{class: "eqptcapacityL2TotalUsage5min"},     // L2 total
+	{class: "eqptcapacityL3Usage5min"},          // L3 local
+	{class: "eqptcapacityL3UsageCap5min"},       // L3 local cap
+	{class: "eqptcapacityL3RemoteUsage5min"},    // L3 remote
+	{class: "eqptcapacityL3RemoteUsageCap5min"}, // L3 remote cap
+	{class: "eqptcapacityL3TotalUsage5min"},     // L3 total
+	{class: "eqptcapacityL3TotalUsageCap5min"},  // L3 total cap
+	{class: "eqptcapacityMcastUsage5min"},       // Multicast
 }
 
 func fetch(client goaci.Client, req Request, db *buntdb.DB) {
@@ -214,12 +212,12 @@ func fetch(client goaci.Client, req Request, db *buntdb.DB) {
 		Interface("query", req.queries).
 		Msg("requesting resource")
 	res, err := client.GetClass(req.class, req.queries...)
-	if err != nil && !req.optional {
-		log.Panic().
+	if err != nil {
+		log.Error().
 			Err(err).
 			Str("class", req.class).
 			Interface("query", req.queries).
-			Msg("Failed to make request. Please report this error to Cisco.")
+			Msg("failed to make request")
 	}
 	if req.prefix == "" {
 		req.prefix = req.class
