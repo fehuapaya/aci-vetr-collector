@@ -26,7 +26,7 @@ func TestFetch(t *testing.T) {
 	client.LastRefresh = time.Now()
 	gock.InterceptClient(client.HttpClient)
 	db, _ := buntdb.Open(":memory:")
-	req := Request{class: "fvTenant"}
+	req := newRequest("fvTenant")
 	wg.Add(1)
 	fetch(client, req, db)
 	err := db.View(func(tx *buntdb.Tx) error {
