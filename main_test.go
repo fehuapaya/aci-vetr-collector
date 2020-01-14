@@ -12,6 +12,7 @@ import (
 )
 
 func TestFetch(t *testing.T) {
+	a := assert.New(t)
 	defer gock.Off()
 	gock.New("https://apic").
 		Get("/api/class/fvTenant.json").
@@ -30,11 +31,11 @@ func TestFetch(t *testing.T) {
 	fetch(client, req, db)
 	err := db.View(func(tx *buntdb.Tx) error {
 		return tx.AscendKeys("fvTenant:*", func(key, value string) bool {
-			assert.Equal(t, key, "fvTenant:"+gjson.Get(value, "dn").Str)
+			a.Equal(key, "fvTenant:"+gjson.Get(value, "dn").Str)
 			return true
 		})
 	})
-	assert.NoError(t, err)
+	a.NoError(err)
 
 	// name     string             // Custom class name for DB - use class by default
 	// class    string             // MO class to query
