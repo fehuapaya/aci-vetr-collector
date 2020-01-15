@@ -9,8 +9,6 @@ This tool collects data from the APIC to be used by Cisco Services in the ACI He
 
 Binary releases are available [in the releases tab](https://github.com/brightpuddle/aci-vetr-collector/releases). Please always use the latest release unless explicitly instructed to use an earlier release by Cisco Services.
 
-
-
 # Purpose
 
 This tool performs data collection for the ACI health check. This tool can be run by the Cisco Business Critical Services customer or coordinated with services to collect the data over WebEx.
@@ -26,68 +24,77 @@ The tool collects data from a number of endpoints on the APIC for configuration,
 The following API managed objects are queried by this tool:
 
 ```
-/api/class/eqptcapacityL3RemoteUsageCap5min.json
-/api/class/eqptcapacityL3UsageCap5min.json
-/api/class/infraRsVlanNs.json
-/api/class/topSystem.json
-/api/class/infraSetPol.json
-/api/class/fabricSetupP.json
-/api/class/fvAEPg.json
-/api/class/l3extLIfP.json
-/api/class/bgpRRNodePEp.json
-/api/class/epLoopProtectP.json
-/api/class/firmwareCtrlrRunning.json
-/api/class/eqptcapacityL2RemoteUsage5min.json
-/api/class/eqptcapacityL2TotalUsage5min.json
-/api/class/fvSubnet.json
-/api/class/fvTenant.json
-/api/class/eqptcapacityVlanUsage5min.json
-/api/class/eqptcapacityPolUsage5min.json
-/api/class/fabricNodeControl.json
-/api/class/l3extOut.json
-/api/class/eqptcapacityL2Usage5min.json
-/api/class/fvCEp.json?rsp-subtree-include=count
-/api/class/eqptcapacityL3TotalUsage5min.json
-/api/class/fvRsCons.json
-/api/class/fvIp.json?rsp-subtree-include=count
-/api/class/vzRsSubjFiltAtt.json
-/api/class/fvnsEncapBlk.json
-/api/class/fabricRsLeNodePGrp.json
-/api/class/vzBrCP.json
-/api/class/eqptBoard.json
-/api/class/firmwareRunning.json
-/api/class/eqptcapacityMcastUsage5min.json
-/api/class/fabricNode.json
-/api/class/fvCtx.json
-/api/class/epControlP.json
-/api/class/l3extLNodeP.json
-/api/class/fabricRsNodeCtrl.json
-/api/class/vnsCDev.json?rsp-subtree-include=count
-/api/class/isisDomPol.json
-/api/class/vnsGraphInst.json?rsp-subtree-include=count
-/api/class/eqptcapacityL3Usage5min.json
-/api/class/fvRsProv.json
-/api/class/l3extInstP.json
-/api/class/eqptcapacityL3RemoteUsage5min.json
-/api/class/infraAttEntityP.json
-/api/class/fvBD.json
-/api/class/fvRsBd.json
-/api/class/epIpAgingP.json
-/api/class/infraPortTrackPol.json
-/api/class/l3extRsNodeL3OutAtt.json
-/api/class/vzSubj.json
-/api/class/ctxClassCnt.json?rsp-subtree-class=l2BD,fvEpP,l3Dom
-/api/class/infraRsDomP.json
-/api/class/mcpIfPol.json
-/api/class/mcpInstPol.json
-/api/class/fabricNodeBlk.json
-/api/class/faultInst.json
-/api/class/eqptcapacityL3TotalUsageCap5min.json
-/api/class/fvcapRule.json
-/api/class/pkiExportEncryptionKey.json
+/api/class/topSystem
+/api/class/eqptBoard
+/api/class/fabricNode
+/api/class/fabricSetupP
+/api/class/epLoopProtectP
+/api/class/epControlP
+/api/class/epIpAgingP
+/api/class/infraSetPol
+/api/class/infraPortTrackPol
+/api/class/coopPol
+/api/class/fvAEPg
+/api/class/fvRsBd
+/api/class/fvBD
+/api/class/fvCtx
+/api/class/fvTenant
+/api/class/fvSubnet
+/api/class/vzBrCP
+/api/class/vzFilter
+/api/class/vzSubj
+/api/class/vzRsSubjFiltAtt
+/api/class/fvRsProv
+/api/class/fvRsCons
+/api/class/l3extOut
+/api/class/l3extLNodeP
+/api/class/l3extRsNodeL3OutAtt
+/api/class/l3extLIfP
+/api/class/l3extInstP
+/api/class/isisDomPol
+/api/class/bgpRRNodePEp
+/api/class/l3IfPol
+/api/class/fabricNodeControl
+/api/class/fabricRsNodeCtrl
+/api/class/fabricRsLeNodePGrp
+/api/class/fabricNodeBlk
+/api/class/mcpIfPol
+/api/class/infraRsMcpIfPol
+/api/class/infraRsAccBaseGrp
+/api/class/infraRsAccPortP
+/api/class/mcpInstPol
+/api/class/infraAttEntityP
+/api/class/infraRsDomP
+/api/class/infraRsVlanNs
+/api/class/fvnsEncapBlk
+/api/class/firmwareRunning
+/api/class/firmwareCtrlrRunning
+/api/class/pkiExportEncryptionKey
+/api/class/faultInst
+/api/class/fvcapRule
+/api/class/fvCEp
+/api/class/fvIp
+/api/class/vnsCDev
+/api/class/vnsGraphInst
+/api/class/ctxClassCnt
+/api/class/fabricHealthTotal
+/api/class/topSystem
+/api/class/eqptcapacityVlanUsage5min
+/api/class/eqptcapacityPolUsage5min
+/api/class/eqptcapacityL2Usage5min
+/api/class/eqptcapacityL2RemoteUsage5min
+/api/class/eqptcapacityL2TotalUsage5min
+/api/class/eqptcapacityL3Usage5min
+/api/class/eqptcapacityL3UsageCap5min
+/api/class/eqptcapacityL3RemoteUsage5min
+/api/class/eqptcapacityL3RemoteUsageCap5min
+/api/class/eqptcapacityL3TotalUsage5min
+/api/class/eqptcapacityL3TotalUsageCap5min
+/api/class/eqptcapacityMcastUsage5min
 ```
 
 # Security
+
 This tool only collects the output of the afformentioned managed objects. Documentation on these endpoints is available in the [full API documentation](https://developer.cisco.com/site/apic-mim-ref-api/). Credentials are only used at the point of collection and are not stored in any way.
 
 All data provided to Cisco will be maintained under Cisco's data retention policy.
@@ -100,14 +107,14 @@ All command line paramters are optional; the tool will prompt for any missing in
 Usage: aci-vetr-c [--ip IP] [--username USERNAME] [--password PASSWORD] [--output OUTPUT] [--debug]
 
 Options:
-  --ip IP, -i IP         APIC IP address
+  --apic APIC, -a APIC   APIC hostname or IP address
   --username USERNAME, -u USERNAME
                          APIC username
   --password PASSWORD, -p PASSWORD
                          APIC password
   --output OUTPUT, -o OUTPUT
                          Output file [default: aci-vetr-data.zip]
-  --debug, -d            Debug output
+  --icurl                Write requests to icurl script
   --help, -h             display this help and exit
   --version              display version and exit
 ```
