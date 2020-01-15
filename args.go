@@ -22,7 +22,7 @@ func (Args) Description() string {
 
 // Version is the CLI version string.
 func (Args) Version() string {
-	return fmt.Sprintf("version %s\nschema version %d", version, schemaVersion)
+	return "version " + version
 }
 
 func newArgs() (Args, error) {

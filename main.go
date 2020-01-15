@@ -18,10 +18,9 @@ import (
 var version string
 
 const (
-	schemaVersion = 23
-	resultZip     = "aci-vetr-data.zip"
-	logFile       = "aci-vetr-c.log"
-	dbName        = "data.db"
+	resultZip = "aci-vetr-data.zip"
+	logFile   = "aci-vetr-c.log"
+	dbName    = "data.db"
 )
 
 var wg sync.WaitGroup
