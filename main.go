@@ -1,18 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/alexflint/go-arg"
 	"github.com/brightpuddle/goaci"
-	"github.com/mattn/go-colorable"
 	"github.com/mholt/archiver"
-	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/buntdb"
 )
 
@@ -28,184 +26,29 @@ const (
 
 var wg sync.WaitGroup
 
-var log zerolog.Logger
-
-// Args are command line parameters.
-type Args struct {
-	IP       string `arg:"-i" help:"APIC IP address"`
-	Username string `arg:"-u" help:"APIC username"`
-	Password string `arg:"-p" help:"APIC password"`
-	Output   string `arg:"-o" help:"Output file"`
-	Debug    bool   `arg:"-d" help:"Debug output"`
+type Client struct {
+	client goaci.Client
+	log    Logger
 }
 
-// Description is the CLI description string.
-func (Args) Description() string {
-	return "ACI vetR collector"
-}
-
-// Version is the CLI version string.
-func (Args) Version() string {
-	return fmt.Sprintf("version %s\nschema version %d", version, schemaVersion)
-}
-
-func newArgsFromCLI() Args {
-	args := Args{Output: resultZip}
-	arg.MustParse(&args)
-	return args
-}
-
-func runningTime(msg string) (string, time.Time) {
+func (client Client) request(req Request) (goaci.Res, error) {
 	startTime := time.Now()
-	log.Debug().Time("start_time", startTime).Msgf("begin: %s", msg)
-	return msg, startTime
-}
-
-func elapsed(msg string, startTime time.Time) {
-	log.Debug().
+	client.log.Debug().Time("start_time", startTime).Msgf("begin: %s", req.prefix)
+	res, err := client.client.Do(req.req)
+	client.log.Debug().
 		TimeDiff("elapsed_time", time.Now(), startTime).
-		Msgf("done: %s", msg)
+		Msgf("done: %s", req.prefix)
+	return res, err
 }
 
-// Request is an HTTP request.
-type Request struct {
-	req    goaci.Req // goACI request object
-	prefix string    // Prefix for the DB
-}
-
-// Create new request and use classname as db prefix
-func newRequest(class string, mods ...func(*goaci.Req)) Request {
-	req := goaci.NewReq("GET", "api/class/"+class, nil, mods...)
-	return Request{req, class}
-}
-
-var reqs = []Request{
-	/************************************************************
-	Infrastructure
-	************************************************************/
-	newRequest("topSystem"),    // All devices
-	newRequest("eqptBoard"),    // APIC hardware
-	newRequest("fabricNode"),   // Switch hardware
-	newRequest("fabricSetupP"), // Pods (fabric setup policy)
-
-	/************************************************************
-	Fabric-wide settings
-	************************************************************/
-	newRequest("epLoopProtectP"),    // EP loop protection policy
-	newRequest("epControlP"),        // Rogue EP control policy
-	newRequest("epIpAgingP"),        // IP aging policy
-	newRequest("infraSetPol"),       // Fabric-wide settings
-	newRequest("infraPortTrackPol"), // Port tracking policy
-	newRequest("coopPol"),           // COOP group policy
-
-	/************************************************************
-	Tenants
-	************************************************************/
-	// Primary constructs
-	newRequest("fvAEPg"),   // EPG
-	newRequest("fvRsBd"),   // EPG --> BD
-	newRequest("fvBD"),     // BD
-	newRequest("fvCtx"),    // VRF
-	newRequest("fvTenant"), // Tenant
-	newRequest("fvSubnet"), // Subnet
-
-	// Contracts
-	newRequest("vzBrCP"),          // Contract
-	newRequest("vzFilter"),        // Filter
-	newRequest("vzSubj"),          // Subject
-	newRequest("vzRsSubjFiltAtt"), // Subject --> filter
-	newRequest("fvRsProv"),        // EPG --> contract provided
-	newRequest("fvRsCons"),        // EPG --> contract consumed
-
-	// L3outs
-	newRequest("l3extOut"),            // L3out
-	newRequest("l3extLNodeP"),         // L3 node profile
-	newRequest("l3extRsNodeL3OutAtt"), // Node profile --> Node
-	newRequest("l3extLIfP"),           // L3 interface profile
-	newRequest("l3extInstP"),          // External EPG
-
-	/************************************************************
-	Fabric Policies
-	************************************************************/
-	newRequest("isisDomPol"),         // ISIS policy
-	newRequest("bgpRRNodePEp"),       // BGP route reflector nodes
-	newRequest("l3IfPol"),            // L3 interface policy
-	newRequest("fabricNodeControl"),  // node control (Dom, netflow,etc)
-	newRequest("fabricRsNodeCtrl"),   // node policy group --> node control
-	newRequest("fabricRsLeNodePGrp"), // leaf --> leaf node policy group
-	newRequest("fabricNodeBlk"),      // Node block
-
-	/************************************************************
-	Fabric Access
-	************************************************************/
-	// MCP
-	newRequest("mcpIfPol"),          // MCP inteface policy
-	newRequest("infraRsMcpIfPol"),   // MCP pol --> policy group
-	newRequest("infraRsAccBaseGrp"), // policy group --> host port selector
-	newRequest("infraRsAccPortP"),   // int profile --> node profile
-
-	newRequest("mcpInstPol"), // MCP global policy
-
-	// AEP/domain/VLANs
-	newRequest("infraAttEntityP"), // AEP
-	newRequest("infraRsDomP"),     // AEP --> domain
-	newRequest("infraRsVlanNs"),   // Domain --> VLAN pool
-	newRequest("fvnsEncapBlk"),    // VLAN encap block
-
-	/************************************************************
-	Admin/Operations
-	************************************************************/
-	newRequest("firmwareRunning"),        // Switch firmware
-	newRequest("firmwareCtrlrRunning"),   // Controller firmware
-	newRequest("pkiExportEncryptionKey"), // Crypto key
-
-	/************************************************************
-	Live State
-	************************************************************/
-	newRequest("faultInst"), // Faults
-	newRequest("fvcapRule"), // Capacity rules
-	// Endpoint count
-	newRequest("fvCEp", goaci.Query("rsp-subtree-include", "count")),
-	// IP count
-	newRequest("fvIp", goaci.Query("rsp-subtree-include", "count")),
-	// L4-L7 container count
-	newRequest("vnsCDev", goaci.Query("rsp-subtree-include", "count")),
-	// L4-L7 service graph count
-	newRequest("vnsGraphInst", goaci.Query("rsp-subtree-include", "count")),
-	// MO count by node
-	newRequest("ctxClassCnt", goaci.Query("rsp-subtree-class", "l2BD,fvEpP,l3Dom")),
-
-	// Fabric health
-	newRequest("fabricHealthTotal"), // Total and per-pod health scores
-	{ // Per-device health stats
-		newRequest("topSystem", goaci.Query("rsp-subtree-include", "health,no-scoped")).req,
-		"healthInst",
-	},
-
-	// Switch capacity
-	newRequest("eqptcapacityVlanUsage5min"),        // VLAN
-	newRequest("eqptcapacityPolUsage5min"),         // TCAM
-	newRequest("eqptcapacityL2Usage5min"),          // L2 local
-	newRequest("eqptcapacityL2RemoteUsage5min"),    // L2 remote
-	newRequest("eqptcapacityL2TotalUsage5min"),     // L2 total
-	newRequest("eqptcapacityL3Usage5min"),          // L3 local
-	newRequest("eqptcapacityL3UsageCap5min"),       // L3 local cap
-	newRequest("eqptcapacityL3RemoteUsage5min"),    // L3 remote
-	newRequest("eqptcapacityL3RemoteUsageCap5min"), // L3 remote cap
-	newRequest("eqptcapacityL3TotalUsage5min"),     // L3 total
-	newRequest("eqptcapacityL3TotalUsageCap5min"),  // L3 total cap
-	newRequest("eqptcapacityMcastUsage5min"),       // Multicast
-}
-
-func fetch(client goaci.Client, req Request, db *buntdb.DB) {
-	defer elapsed(runningTime(req.prefix))
-	log.Info().Str("class", req.prefix).Msg("fetching resource...")
-	log.Debug().
+func fetch(client Client, req Request, db *buntdb.DB) {
+	client.log.Info().Str("class", req.prefix).Msg("fetching resource...")
+	client.log.Debug().
 		Str("url", req.req.HttpReq.URL.String()).
 		Msg("requesting resource")
-	res, err := client.Do(req.req)
+	res, err := client.request(req)
 	if err != nil {
-		log.Error().
+		client.log.Error().
 			Err(err).
 			Str("url", req.req.HttpReq.URL.String()).
 			Msg("failed to make request")
@@ -233,81 +76,97 @@ func fetch(client goaci.Client, req Request, db *buntdb.DB) {
 	wg.Done()
 }
 
-func initLogger(args Args) zerolog.Logger {
-	file, err := os.Create(logFile)
+// Write requests to icurl script to be run on the APIC.
+// Note, this is a more complicated collection methodology and should rarely
+// be used.
+func writeICurl(args Args, log Logger) error {
+	var (
+		fn        = "vetr-collect.sh"
+		final     = "aci-vetr-raw.zip"
+		tmpFolder = "/tmp/aci-vetr-collections"
+	)
+	os.Remove(fn)
+	script := []string{
+		"#!/bin/bash",
+		"",
+		"mkdir " + tmpFolder,
+		"",
+		"# Fetch data from API",
+	}
+
+	for _, req := range reqs {
+		cmd := fmt.Sprintf("icurl -kG https://localhost/%s", req.req.HttpReq.URL.Path)
+
+		for key, value := range req.req.HttpReq.URL.Query() {
+			if len(value) >= 1 {
+				cmd = fmt.Sprintf("%s -d '%s=%s'", cmd, key, value[0])
+			}
+		}
+		outFile := req.prefix + ".json"
+		cmd = fmt.Sprintf("%s > %s/%s", cmd, tmpFolder, outFile)
+		script = append(script, cmd)
+	}
+
+	script = append(script, []string{
+		"",
+		"# Zip result",
+		fmt.Sprintf("zip -mj ~/%s %s/*.json", final, tmpFolder),
+		"",
+		"# Cleanup",
+		"rm -rf " + tmpFolder,
+		"",
+		"echo Collection complete.",
+		fmt.Sprintf("echo Provide Cisco Services the %s file.", final),
+	}...)
+
+	err := ioutil.WriteFile(fn, []byte(strings.Join(script, "\n")), 0755)
 	if err != nil {
-		panic(fmt.Sprintf("cannot create log file %s", logFile))
+		return err
 	}
-
-	if !args.Debug {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
-	zerolog.DurationFieldInteger = true
-
-	return zerolog.New(zerolog.MultiLevelWriter(
-		file,
-		zerolog.ConsoleWriter{Out: colorable.NewColorableStdout()},
-	)).With().Timestamp().Logger()
+	log.Info().Msgf("Script complete. Run %s on the APIC.", fn)
+	return nil
 }
 
-func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error().Msg("Collection failed.")
-		}
-		os.Remove(dbName)
-		os.Remove(logFile)
-		fmt.Println("Press enter to exit.")
-		var throwaway string
-		fmt.Scanln(&throwaway)
-	}()
-
-	// Get config
-	args := newArgsFromCLI()
-	log = initLogger(args)
+// Fetch data via API.
+func fetchHttp(args Args, log Logger) error {
 	client, err := goaci.NewClient(
-		args.IP,
+		args.APIC,
 		args.Username,
 		args.Password,
 		goaci.RequestTimeout(600),
 	)
 	if err != nil {
-		log.Panic().Err(err).Msg("Failed to create ACI client.")
+		return fmt.Errorf("failed to create ACI client: %v", err)
 	}
 
 	// Authenticate
-	log.Info().Str("host", args.IP).Msg("APIC host")
+	log.Info().Str("host", args.APIC).Msg("APIC host")
 	log.Info().Str("user", args.Username).Msg("APIC username")
 	log.Info().Msg("Authenticating to the APIC...")
 	if err := client.Login(); err != nil {
-		log.Panic().
-			Err(err).
-			Str("ip", args.IP).
-			Str("user", args.Username).
-			Msg("cannot authenticate to the APIC.")
+		return fmt.Errorf("cannot authenticate to the APIC at %s: %v", args.APIC, err)
 	}
 
 	db, err := buntdb.Open(dbName)
 	if err != nil {
-		log.Panic().Err(err).Str("file", dbName).Msg("cannot open output file")
+		return fmt.Errorf("cannot open output file: %v", err)
 	}
 
 	// Fetch data from API
 	fmt.Println(strings.Repeat("=", 30))
 	for _, req := range reqs {
 		wg.Add(1)
-		go fetch(client, req, db)
+		go fetch(Client{client: client, log: log}, req, db)
 	}
 	wg.Wait()
 
 	fmt.Println(strings.Repeat("=", 30))
 
 	// Add metadata
-	metadata, _ := json.Marshal(map[string]interface{}{
-		"collectorVersion": version,
-		"schemaVersion":    schemaVersion,
-		"timestamp":        time.Now(),
-	})
+	metadata := goaci.Body{}.
+		Set("collectorVersion", version).
+		Set("timestamp", time.Now().String()).
+		Str
 	if err := db.Update(func(tx *buntdb.Tx) error {
 		if _, _, err := tx.Set("meta", string(metadata), nil); err != nil {
 			log.Panic().Err(err).Msg("cannot write metadata to db")
@@ -323,16 +182,42 @@ func main() {
 	log.Info().Msg("Creating archive")
 	os.Remove(args.Output) // Remove any old archives and ignore errors
 	if err := archiver.Archive([]string{dbName, logFile}, args.Output); err != nil {
-		log.Panic().
-			Err(err).
-			Str("src", dbName).
-			Str("dst", args.Output).
-			Msg("cannot create archive")
+		return fmt.Errorf("cannot create archive: %v", err)
 	}
 
 	// Cleanup
 	fmt.Println(strings.Repeat("=", 30))
 	log.Info().Msg("Collection complete.")
-	log.Info().Msgf("Please provide %s to Cisco Services for further analysis.",
-		args.Output)
+	log.Info().Msgf("Please provide %s to Cisco Services for further analysis.", args.Output)
+	return nil
+}
+
+func main() {
+	log := newLogger()
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				log.Error().Err(err).Msg("unexpected error")
+			}
+			log.Error().Msg("Collection failed.")
+		}
+		fmt.Println("Press enter to exit.")
+		var throwaway string
+		fmt.Scanln(&throwaway)
+	}()
+	args, err := newArgs()
+	if err != nil {
+		panic(err)
+	}
+	if args.ICurl {
+		err := writeICurl(args, log)
+		if err != nil {
+			log.Error().Err(err).Msg("cannot create icurl script")
+		}
+	} else {
+		err := fetchHttp(args, log)
+		if err != nil {
+			log.Error().Err(err).Msg("cannot fetch data from the API")
+		}
+	}
 }
