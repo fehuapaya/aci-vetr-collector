@@ -28,8 +28,5 @@ func (Args) Version() string {
 func newArgs() (Args, error) {
 	args := Args{Output: resultZip}
 	arg.MustParse(&args)
-	if args.ICurl && args.APIC == "" {
-		return args, fmt.Errorf("APIC host or IP is required for icurl script output")
-	}
 	return args, nil
 }
