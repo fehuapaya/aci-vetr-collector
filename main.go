@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/mholt/archiver"
 	"github.com/rs/zerolog"
 	"github.com/tidwall/buntdb"
+	"github.com/tidwall/gjson"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -23,10 +25,10 @@ const (
 	dbName    = "data.db"
 )
 
-// Write requests to icurl script to be run on the APIC.
+// Write requests to script to be run on the APIC.
 // Note, this is a more complicated collection methodology and should rarely
 // be used.
-func writeICurl(args Args, log zerolog.Logger) error {
+func writeScript(args Args, log zerolog.Logger) error {
 	var (
 		fn        = "vetr-collect.sh"
 		final     = "aci-vetr-raw.zip"
@@ -41,16 +43,18 @@ func writeICurl(args Args, log zerolog.Logger) error {
 		"# Fetch data from API",
 	}
 
-	for _, req := range reqs {
-		cmd := fmt.Sprintf("icurl -kG https://localhost/%s", req.req.HttpReq.URL.Path)
+	client := goaci.Client{}
 
-		for key, value := range req.req.HttpReq.URL.Query() {
+	for _, request := range getRequests() {
+		req := client.NewReq("GET", request.path, nil, request.mods...)
+		cmd := fmt.Sprintf("icurl -kG https://localhost/%s", req.HttpReq.URL.Path)
+
+		for key, value := range req.HttpReq.URL.Query() {
 			if len(value) >= 1 {
 				cmd = fmt.Sprintf("%s -d '%s=%s'", cmd, key, value[0])
 			}
 		}
-		outFile := req.prefix + ".json"
-		cmd = fmt.Sprintf("%s > %s/%s", cmd, tmpFolder, outFile)
+		cmd = fmt.Sprintf("%s > %s/%s", cmd, tmpFolder, request.prefix+".json")
 		script = append(script, cmd)
 	}
 
@@ -71,6 +75,52 @@ func writeICurl(args Args, log zerolog.Logger) error {
 		return err
 	}
 	log.Info().Msgf("Script complete. Run %s on the APIC.", fn)
+	return nil
+}
+
+// Translate script data to aci-vetr-data.zip file for backend consumption.
+func readScript(in, out string, log zerolog.Logger) error {
+	results := make(map[string]goaci.Res)
+	// Read data from zip
+	err := archiver.Walk(in, func(f archiver.File) error {
+		zfh, ok := f.Header.(zip.FileHeader)
+		if ok && strings.HasSuffix(zfh.Name, ".json") {
+			prefix := strings.TrimSuffix(zfh.Name, ".json")
+			b, err := ioutil.ReadAll(f)
+			if err != nil {
+				return err
+			}
+			json := gjson.ParseBytes(b)
+			results[prefix] = json
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error reading from archive: %v", err)
+	}
+
+	// Apply filters
+	for _, request := range getRequests() {
+		if res, ok := results[request.prefix]; ok {
+			results[request.prefix] = res.Get(request.filter)
+		}
+	}
+
+	// Write to DB
+	if err := writeToDB(results); err != nil {
+		return fmt.Errorf("error writing to DB: %v", err)
+	}
+
+	// Create archive
+	log.Info().Msg("Creating archive")
+	os.Remove(out) // Remove any old archives and ignore errors
+	if err := archiver.Archive([]string{dbName}, out); err != nil {
+		return fmt.Errorf("cannot create archive: %v", err)
+	}
+
+	// Cleanup
+	fmt.Println(strings.Repeat("=", 30))
+	log.Info().Msgf("Please provide %s to Cisco Services for further analysis.", out)
 	return nil
 }
 
@@ -142,17 +192,17 @@ func fetchHttp(args Args, log zerolog.Logger) error {
 	results := make(map[string]goaci.Res)
 	var g errgroup.Group
 
-	for _, req := range reqs {
+	for _, req := range getRequests() {
 		req := req
 
 		g.Go(func() error {
 			startTime := time.Now()
 			log.Debug().Time("start_time", startTime).Msgf("begin: %s", req.prefix)
 
-			log.Info().Str("class", req.prefix).Msg("fetching resource...")
-			log.Debug().Str("url", req.req.HttpReq.URL.String()).Msg("requesting resource")
+			log.Info().Str("resource", req.prefix).Msg("fetching resource...")
+			log.Debug().Str("url", req.path).Msg("requesting resource")
 
-			res, err := client.Do(req.req)
+			res, err := client.Get(req.path)
 			if err != nil {
 				return fmt.Errorf("failed to make request: %v", err)
 			}
@@ -205,12 +255,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if args.ICurl {
-		err := writeICurl(args, log)
+	switch {
+	case args.WriteScript:
+		err := writeScript(args, log)
 		if err != nil {
-			log.Error().Err(err).Msg("cannot create icurl script")
+			log.Error().Err(err).Msg("cannot create script")
 		}
-	} else {
+	case args.ReadScript != "":
+		err := readScript(args.ReadScript, args.Output, log)
+		if err != nil {
+			log.Error().Err(err).Msg("cannot read script output")
+		}
+	default:
 		err := fetchHttp(args, log)
 		if err != nil {
 			log.Error().Err(err).Msg("cannot fetch data from the API")
