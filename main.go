@@ -5,13 +5,13 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/brightpuddle/goaci"
 	"github.com/mholt/archiver"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"github.com/tidwall/buntdb"
+	"golang.org/x/sync/errgroup"
 )
 
 // Version comes from CI
@@ -23,62 +23,10 @@ const (
 	dbName    = "data.db"
 )
 
-var wg sync.WaitGroup
-
-type Client struct {
-	client goaci.Client
-	log    Logger
-}
-
-func (client Client) request(req Request) (goaci.Res, error) {
-	startTime := time.Now()
-	client.log.Debug().Time("start_time", startTime).Msgf("begin: %s", req.prefix)
-	res, err := client.client.Do(req.req)
-	client.log.Debug().
-		TimeDiff("elapsed_time", time.Now(), startTime).
-		Msgf("done: %s", req.prefix)
-	return res, err
-}
-
-func fetch(client Client, req Request, db *buntdb.DB) {
-	client.log.Info().Str("class", req.prefix).Msg("fetching resource...")
-	client.log.Debug().
-		Str("url", req.req.HttpReq.URL.String()).
-		Msg("requesting resource")
-	res, err := client.request(req)
-	if err != nil {
-		client.log.Error().
-			Err(err).
-			Str("url", req.req.HttpReq.URL.String()).
-			Msg("failed to make request")
-	}
-	if err := db.Update(func(tx *buntdb.Tx) error {
-		for _, record := range res.Get("imdata.#.*.attributes").Array() {
-			dn := record.Get("dn").Str
-			if dn == "" {
-				log.Panic().Str("record", record.Raw).Msg("DN empty")
-			}
-			log.Debug().
-				Interface("req", req).
-				Str("dn", dn).
-				Msg("set_db")
-			key := fmt.Sprintf("%s:%s", req.prefix, record.Get("dn").Str)
-			if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
-				log.Panic().Err(err).Msg("cannot set key")
-			}
-		}
-		return nil
-	}); err != nil {
-		log.Panic().Err(err).Msg("cannot write to db file")
-	}
-
-	wg.Done()
-}
-
 // Write requests to icurl script to be run on the APIC.
 // Note, this is a more complicated collection methodology and should rarely
 // be used.
-func writeICurl(args Args, log Logger) error {
+func writeICurl(args Args, log zerolog.Logger) error {
 	var (
 		fn        = "vetr-collect.sh"
 		final     = "aci-vetr-raw.zip"
@@ -126,8 +74,50 @@ func writeICurl(args Args, log Logger) error {
 	return nil
 }
 
+// Write results to db file.
+func writeToDB(results map[string]goaci.Res) error {
+	db, err := buntdb.Open(dbName)
+	if err != nil {
+		return fmt.Errorf("cannot open output file: %v", err)
+	}
+	defer db.Close()
+
+	for prefix, res := range results {
+		if err := db.Update(func(tx *buntdb.Tx) error {
+			for _, record := range res.Get("imdata.#.*.attributes").Array() {
+				dn := record.Get("dn").Str
+				if dn == "" {
+					return fmt.Errorf("DN empty: %s", record.Raw)
+				}
+				key := fmt.Sprintf("%s:%s", prefix, record.Get("dn").Str)
+				if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
+					return fmt.Errorf("cannot set key: %v", err)
+				}
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("cannot write to DB file: %v", err)
+		}
+	}
+
+	// Add metadata
+	metadata := goaci.Body{}.
+		Set("collectorVersion", version).
+		Set("timestamp", time.Now().String()).
+		Str
+	if err := db.Update(func(tx *buntdb.Tx) error {
+		if _, _, err := tx.Set("meta", string(metadata), nil); err != nil {
+			return fmt.Errorf("cannot write metadata to db: %v", err)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Fetch data via API.
-func fetchHttp(args Args, log Logger) error {
+func fetchHttp(args Args, log zerolog.Logger) error {
 	client, err := goaci.NewClient(
 		args.APIC,
 		args.Username,
@@ -146,36 +136,43 @@ func fetchHttp(args Args, log Logger) error {
 		return fmt.Errorf("cannot authenticate to the APIC at %s: %v", args.APIC, err)
 	}
 
-	db, err := buntdb.Open(dbName)
-	if err != nil {
-		return fmt.Errorf("cannot open output file: %v", err)
-	}
-
 	// Fetch data from API
 	fmt.Println(strings.Repeat("=", 30))
+
+	results := make(map[string]goaci.Res)
+	var g errgroup.Group
+
 	for _, req := range reqs {
-		wg.Add(1)
-		go fetch(Client{client: client, log: log}, req, db)
+		req := req
+
+		g.Go(func() error {
+			startTime := time.Now()
+			log.Debug().Time("start_time", startTime).Msgf("begin: %s", req.prefix)
+
+			log.Info().Str("class", req.prefix).Msg("fetching resource...")
+			log.Debug().Str("url", req.req.HttpReq.URL.String()).Msg("requesting resource")
+
+			res, err := client.Do(req.req)
+			if err != nil {
+				return fmt.Errorf("failed to make request: %v", err)
+			}
+			results[req.prefix] = res
+			log.Debug().
+				TimeDiff("elapsed_time", time.Now(), startTime).
+				Msgf("done: %s", req.prefix)
+			return nil
+		})
 	}
-	wg.Wait()
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	if err := writeToDB(results); err != nil {
+		return fmt.Errorf("error writing to DB: %v", err)
+	}
 
 	fmt.Println(strings.Repeat("=", 30))
-
-	// Add metadata
-	metadata := goaci.Body{}.
-		Set("collectorVersion", version).
-		Set("timestamp", time.Now().String()).
-		Str
-	if err := db.Update(func(tx *buntdb.Tx) error {
-		if _, _, err := tx.Set("meta", string(metadata), nil); err != nil {
-			log.Panic().Err(err).Msg("cannot write metadata to db")
-		}
-		return nil
-	}); err != nil {
-		log.Panic().Err(err).Msg("cannot update db file")
-	}
-
-	db.Close()
 
 	// Create archive
 	log.Info().Msg("Creating archive")
@@ -192,7 +189,7 @@ func fetchHttp(args Args, log Logger) error {
 }
 
 func main() {
-	log := newLogger()
+	log := NewLogger()
 	defer func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(error); ok {
