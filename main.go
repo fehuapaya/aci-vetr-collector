@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func writeScript(args Args, log zerolog.Logger) error {
 	var (
 		fn        = "vetr-collect.sh"
 		final     = "aci-vetr-raw.zip"
-		tmpFolder = "/tmp/aci-vetr-collections"
+		tmpFolder = filepath.Join("tmp", "aci-vetr-collections")
 	)
 	os.Remove(fn)
 	script := []string{
