@@ -28,7 +28,7 @@ func TestFetch(t *testing.T) {
 	db, _ := buntdb.Open(":memory:")
 	req := newRequest("fvTenant")
 	wg.Add(1)
-	fetch(client, req, db)
+	fetch(Client{client: client}, req, db)
 	err := db.View(func(tx *buntdb.Tx) error {
 		return tx.AscendKeys("fvTenant:*", func(key, value string) bool {
 			a.Equal(key, "fvTenant:"+gjson.Get(value, "dn").Str)
@@ -36,10 +36,4 @@ func TestFetch(t *testing.T) {
 		})
 	})
 	a.NoError(err)
-
-	// name     string             // Custom class name for DB - use class by default
-	// class    string             // MO class to query
-	// queries  []func(*goaci.Req) // query paramters
-	// filter   string             // GJSON path query for the result
-	// optional bool               // Fail on unsuccessful collection?
 }
