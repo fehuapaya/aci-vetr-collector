@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/alexflint/go-arg v1.0.0
-	github.com/brightpuddle/goaci v0.4.0
+	github.com/brightpuddle/goaci v0.5.0
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/mattn/go-colorable v0.1.2
@@ -23,5 +23,4 @@ require (
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20190515190549-87c872767d25 // indirect
-	gopkg.in/h2non/gock.v1 v1.0.15
 )
