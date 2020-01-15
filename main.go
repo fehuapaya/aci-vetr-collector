@@ -246,7 +246,11 @@ func main() {
 				log.Error().Err(err).Msg("unexpected error")
 			}
 			log.Error().Msg("Collection failed.")
+		} else {
+			// TODO move cleanup into the archive lib, e.g. zip -m
+			os.Remove(logFile)
 		}
+		os.Remove(dbName)
 		fmt.Println("Press enter to exit.")
 		var throwaway string
 		fmt.Scanln(&throwaway)
