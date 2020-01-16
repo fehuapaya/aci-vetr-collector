@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type Logger = zerolog.Logger
+
 type MultiLevelWriter struct {
 	file    io.Writer
 	console io.Writer
@@ -28,7 +30,7 @@ func (w MultiLevelWriter) WriteLevel(level zerolog.Level, p []byte) (int, error)
 	return w.file.Write(p)
 }
 
-func NewLogger() zerolog.Logger {
+func newLogger() Logger {
 	file, err := os.Create(logFile)
 	if err != nil {
 		panic(fmt.Sprintf("cannot create log file %s", logFile))
