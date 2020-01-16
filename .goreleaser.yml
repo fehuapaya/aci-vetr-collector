@@ -8,7 +8,7 @@ before:
   hooks:
     - rm -rf dist
     - go mod download
-    - go test
+    - go test ./...
 builds:
   -
     goos:
