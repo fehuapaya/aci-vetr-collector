@@ -26,7 +26,7 @@ type Args struct {
 	Password    string `arg:"-p" help:"APIC password"`
 	Output      string `arg:"-o" help:"Output file"`
 	WriteScript bool   `help:"Write requests to icurl script"`
-	ReadScript  string `help:"Read data from icurl script zip file" placeholder:"FILE"`
+	ReadRaw     string `help:"Read raw data from manually collection" placeholder:"FILE"`
 }
 
 // Description is the CLI description string.
@@ -45,7 +45,7 @@ func newArgs() (Args, error) {
 	arg.MustParse(&args)
 
 	switch {
-	case args.WriteScript || args.ReadScript != "":
+	case args.WriteScript || args.ReadRaw != "":
 		return args, nil
 	default:
 		if args.APIC == "" {
