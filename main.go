@@ -110,6 +110,7 @@ func readRaw(in, out string, log zerolog.Logger) error {
 	if err := writeToDB(results); err != nil {
 		return fmt.Errorf("error writing to DB: %v", err)
 	}
+	defer os.Remove(dbName)
 
 	// Create archive
 	log.Info().Msg("Creating archive")
@@ -180,7 +181,7 @@ func fetch(client goaci.Client, reqs []*Request, log Logger) (map[string]goaci.R
 			if err != nil {
 				return fmt.Errorf("failed to make request: %v", err)
 			}
-			responses[req.prefix] = res.Get(req.filter)
+			responses[req.prefix] = res.Get("imdata." + req.filter)
 			log.Debug().
 				TimeDiff("elapsed_time", time.Now(), startTime).
 				Msgf("done: %s", req.prefix)
