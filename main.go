@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,21 +20,21 @@ import (
 var version string
 
 const (
-	resultZip = "aci-vetr-data.zip"
-	logFile   = "aci-vetr-c.log"
-	dbName    = "data.db"
+	resultZip  = "aci-vetr-data.zip"
+	scriptName = "vetr-collect.sh"
+	logFile    = "aci-vetr-c.log"
+	dbName     = "data.db"
 )
 
 // Write requests to script to be run on the APIC.
 // Note, this is a more complicated collection methodology and should rarely
 // be used.
-func writeScript(args Args, log zerolog.Logger) error {
+func writeScript(log zerolog.Logger) error {
 	var (
-		fn        = "vetr-collect.sh"
 		final     = "aci-vetr-raw.zip"
-		tmpFolder = filepath.Join("tmp", "aci-vetr-collections")
+		tmpFolder = "/tmp/aci-vetr-collections"
 	)
-	os.Remove(fn)
+	os.Remove(scriptName)
 	script := []string{
 		"#!/bin/bash",
 		"",
@@ -71,16 +70,16 @@ func writeScript(args Args, log zerolog.Logger) error {
 		fmt.Sprintf("echo Provide Cisco Services the %s file.", final),
 	}...)
 
-	err := ioutil.WriteFile(fn, []byte(strings.Join(script, "\n")), 0755)
+	err := ioutil.WriteFile(scriptName, []byte(strings.Join(script, "\n")), 0755)
 	if err != nil {
 		return err
 	}
-	log.Info().Msgf("Script complete. Run %s on the APIC.", fn)
+	log.Info().Msgf("Script complete. Run %s on the APIC.", scriptName)
 	return nil
 }
 
-// Translate script data to aci-vetr-data.zip file for backend consumption.
-func readScript(in, out string, log zerolog.Logger) error {
+// Translate raw (script) data to aci-vetr-data.zip file for backend consumption.
+func readRaw(in, out string, log zerolog.Logger) error {
 	results := make(map[string]goaci.Res)
 	// Read data from zip
 	err := archiver.Walk(in, func(f archiver.File) error {
@@ -103,7 +102,7 @@ func readScript(in, out string, log zerolog.Logger) error {
 	// Apply filters
 	for _, request := range getRequests() {
 		if res, ok := results[request.prefix]; ok {
-			results[request.prefix] = res.Get(request.filter)
+			results[request.prefix] = res.Get("imdata." + request.filter)
 		}
 	}
 
@@ -126,20 +125,16 @@ func readScript(in, out string, log zerolog.Logger) error {
 }
 
 // Write results to db file.
-func writeToDB(results map[string]goaci.Res) error {
+func writeToDB(responses map[string]goaci.Res) error {
 	db, err := buntdb.Open(dbName)
 	if err != nil {
 		return fmt.Errorf("cannot open output file: %v", err)
 	}
 	defer db.Close()
 
-	for prefix, res := range results {
+	for prefix, res := range responses {
 		if err := db.Update(func(tx *buntdb.Tx) error {
-			for _, record := range res.Get("imdata.#.*.attributes").Array() {
-				dn := record.Get("dn").Str
-				if dn == "" {
-					return fmt.Errorf("DN empty: %s", record.Raw)
-				}
+			for _, record := range res.Array() {
 				key := fmt.Sprintf("%s:%s", prefix, record.Get("dn").Str)
 				if _, _, err := tx.Set(key, record.Raw, nil); err != nil {
 					return fmt.Errorf("cannot set key: %v", err)
@@ -167,6 +162,36 @@ func writeToDB(results map[string]goaci.Res) error {
 	return nil
 }
 
+func fetch(client goaci.Client, reqs []*Request, log Logger) (map[string]goaci.Res, error) {
+	responses := make(map[string]goaci.Res)
+	var g errgroup.Group
+
+	for _, req := range reqs {
+		req := req
+
+		g.Go(func() error {
+			startTime := time.Now()
+			log.Debug().Time("start_time", startTime).Msgf("begin: %s", req.prefix)
+
+			log.Info().Str("resource", req.prefix).Msg("fetching resource...")
+			log.Debug().Str("url", req.path).Msg("requesting resource")
+
+			res, err := client.Get(req.path)
+			if err != nil {
+				return fmt.Errorf("failed to make request: %v", err)
+			}
+			responses[req.prefix] = res.Get(req.filter)
+			log.Debug().
+				TimeDiff("elapsed_time", time.Now(), startTime).
+				Msgf("done: %s", req.prefix)
+			return nil
+		})
+	}
+
+	err := g.Wait()
+	return responses, err
+}
+
 // Fetch data via API.
 func fetchHttp(args Args, log zerolog.Logger) error {
 	client, err := goaci.NewClient(
@@ -190,36 +215,12 @@ func fetchHttp(args Args, log zerolog.Logger) error {
 	// Fetch data from API
 	fmt.Println(strings.Repeat("=", 30))
 
-	results := make(map[string]goaci.Res)
-	var g errgroup.Group
-
-	for _, req := range getRequests() {
-		req := req
-
-		g.Go(func() error {
-			startTime := time.Now()
-			log.Debug().Time("start_time", startTime).Msgf("begin: %s", req.prefix)
-
-			log.Info().Str("resource", req.prefix).Msg("fetching resource...")
-			log.Debug().Str("url", req.path).Msg("requesting resource")
-
-			res, err := client.Get(req.path)
-			if err != nil {
-				return fmt.Errorf("failed to make request: %v", err)
-			}
-			results[req.prefix] = res
-			log.Debug().
-				TimeDiff("elapsed_time", time.Now(), startTime).
-				Msgf("done: %s", req.prefix)
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
+	responses, err := fetch(client, getRequests(), log)
+	if err != nil {
 		return err
 	}
 
-	if err := writeToDB(results); err != nil {
+	if err := writeToDB(responses); err != nil {
 		return fmt.Errorf("error writing to DB: %v", err)
 	}
 
@@ -240,7 +241,7 @@ func fetchHttp(args Args, log zerolog.Logger) error {
 }
 
 func main() {
-	log := NewLogger()
+	log := newLogger()
 	defer func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(error); ok {
@@ -262,12 +263,12 @@ func main() {
 	}
 	switch {
 	case args.WriteScript:
-		err := writeScript(args, log)
+		err := writeScript(log)
 		if err != nil {
 			log.Error().Err(err).Msg("cannot create script")
 		}
-	case args.ReadScript != "":
-		err := readScript(args.ReadScript, args.Output, log)
+	case args.ReadRaw != "":
+		err := readRaw(args.ReadRaw, args.Output, log)
 		if err != nil {
 			log.Error().Err(err).Msg("cannot read script output")
 		}
